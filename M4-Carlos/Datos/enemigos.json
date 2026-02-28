@@ -1,0 +1,34 @@
+{
+    "enemigos":{
+        "nivel1":{
+            "nombre": "enemigo1",
+            "hp":"10",
+            "atk":"10",
+            "def":"10"
+        },
+        "nivel2":{
+            "nombre": "enemigo1",
+            "hp":"10",
+            "atk":"10",
+            "def":"10"
+        },
+        "nivel3":{
+            "nombre": "enemigo1",
+            "hp":"10",
+            "atk":"10",
+            "def":"10"
+        },
+        "nivel4":{
+            "nombre": "enemigo1",
+            "hp":"10",
+            "atk":"10",
+            "def":"10"
+        },
+        "nivel5":{
+            "nombre": "enemigo1",
+            "hp":"10",
+            "atk":"10",
+            "def":"10"
+        }
+    }
+}
