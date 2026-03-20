@@ -27,22 +27,32 @@ class InventarioRepo:
         finally:
             conn.close()
 
-    def add_item(self, tipo: str, catalogo_id: int) -> int:
-        #Añade un ítem al inventario. Devuelve el id asignado al nuevo ítem, para poder usarlo en el inventario.
+    def agregar_item(self, jugador_id: int, catalogo_id: int, tipo: str) -> bool:
+        #Añade un ítem al inventario si el jugador no lo tiene ya.
+        #Devuelve True si es nuevo, False si es duplicado.
+        #gacha.py usa este retorno para saber si generar fragmento.
         conn = get_connection()
         try:
-            cursor = conn.execute(
+            #Primero comprobamos si ya existe
+            row = conn.execute(
+                "SELECT id FROM inventario_jugador WHERE tipo = ? AND catalogo_id = ?",
+                (tipo, catalogo_id)
+            ).fetchone()
+            if row is not None:
+                #Duplicado — no insertamos nada
+                return False
+            #Es nuevo — lo insertamos
+            conn.execute(
                 "INSERT INTO inventario_jugador (tipo, catalogo_id) VALUES (?, ?)",
                 (tipo, catalogo_id)
             )
             conn.commit()
-            return cursor.lastrowid
+            return True
         finally:
             conn.close()
 
     def existe_en_inventario(self, tipo: str, catalogo_id: int) -> bool:
         #Devuelve True si el jugador ya tiene ese ítem del catálogo.
-        #Útil para saber si el jugador tiene duplicados.
         conn = get_connection()
         try:
             row = conn.execute(

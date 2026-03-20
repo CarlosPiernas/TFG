@@ -48,6 +48,7 @@ def initialize_db():
                 bonus_atk         INTEGER NOT NULL DEFAULT 0,
                 bonus_magia       INTEGER NOT NULL DEFAULT 0,
                 bonus_pv          INTEGER NOT NULL DEFAULT 0,
+                bonus_def         INTEGER NOT NULL DEFAULT 0,   -- usado por armas S (ej: Mandoble_Cronos +55 DEF)
                 bonus_destreza    INTEGER NOT NULL DEFAULT 0,
                 personaje_s_id    INTEGER,            
                 efecto_especial   TEXT,               
@@ -64,6 +65,7 @@ def initialize_db():
                 bonus_atk         INTEGER NOT NULL DEFAULT 0,
                 bonus_magia       INTEGER NOT NULL DEFAULT 0,
                 bonus_pv          INTEGER NOT NULL DEFAULT 0,
+                bonus_def         INTEGER NOT NULL DEFAULT 0,   -- usado por RUNA_DEFENSA, RUNA_GUARDIAN, etc.
                 bonus_destreza    INTEGER NOT NULL DEFAULT 0,
                 efecto_especial   TEXT                
             )
@@ -100,16 +102,18 @@ def initialize_db():
             )
         """)
 
-        #Contadores de pity
+        #Contadores de pity — separados por jugador y banner
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS contadores_pity (
-                banner      TEXT    PRIMARY KEY,   -- 'personajes' | 'armas'
-                contador    INTEGER NOT NULL DEFAULT 0
+                jugador_id  INTEGER NOT NULL,          -- siempre 1 por ahora, preparado para escalar
+                banner      TEXT    NOT NULL,          -- 'personajes' | 'armas'
+                contador    INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (jugador_id, banner)
             )
         """)
 
         #Recursos del jugador
-        # Solo puede existir una fila (el jugador). El check lo comprueba.
+        #Solo puede existir una fila (el jugador). El check lo comprueba.
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recursos_jugador (
                 id                  INTEGER PRIMARY KEY CHECK (id = 1),
@@ -118,7 +122,9 @@ def initialize_db():
                 moneda_premium      INTEGER NOT NULL DEFAULT 0,
                 pociones            INTEGER NOT NULL DEFAULT 5,
                 pociones_max        INTEGER NOT NULL DEFAULT 5,    -- para saber si necesita regenerar o no
-                ultima_regen        TEXT                           -- para calcular próxima regeneración
+                ultima_regen        TEXT,                          -- para calcular próxima regeneración
+                fragmentos_rojos    INTEGER NOT NULL DEFAULT 0,   -- por personaje duplicado en gacha
+                fragmentos_azules   INTEGER NOT NULL DEFAULT 0    -- por arma duplicada en gacha
             )
         """)
 

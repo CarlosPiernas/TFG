@@ -45,6 +45,19 @@ class PersonajeRepo:
         finally:
             conn.close()
 
+    def get_by_rareza_y_faccion(self, rareza: str, faccion: str) -> list[dict]:
+        #Devuelve los personajes de una rareza y facción concretas.
+        #gacha.py usa esto para filtrar el pool del banner por facción del jugador.
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM personajes_catalogo WHERE rareza = ? AND faccion = ?",
+                (rareza, faccion)
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
     #Cosas para que tengáis en cuenta:
     #1. Siempre se cierra la conexión con el finally, así se evitan errores de seguridad
     #2. Las consultas que devuelven más de un resultado se ordenan en una lista de diccionarios (cada diccionario es una fila de la bdd)

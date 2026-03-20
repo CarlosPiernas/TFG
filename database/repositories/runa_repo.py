@@ -2,38 +2,35 @@ import sqlite3
 from database.db_manager import get_connection
 
 
-class PityRepo:
+class RunaRepo:
 
-    def get_pity(self, banner: str) -> int:
-        #Devuelve el contador de pity actual de un banner.
+    def get_catalogo(self) -> list[dict]:
+        #Devuelve todas las runas del catálogo.
+        conn = get_connection()
+        try:
+            rows = conn.execute("SELECT * FROM runas_catalogo").fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def get_by_id(self, runa_id: int) -> dict | None:
+        #Devuelve una runa del catálogo por su id. Devuelve None si no existe.
         conn = get_connection()
         try:
             row = conn.execute(
-                "SELECT contador FROM contadores_pity WHERE banner = ?", (banner,)
+                "SELECT * FROM runas_catalogo WHERE id = ?", (runa_id,)
             ).fetchone()
-            return row["contador"] if row else 0
+            return dict(row) if row else None
         finally:
             conn.close()
 
-    def set_pity(self, banner: str, valor: int):
-        #Guarda el contador de pity de un banner.
+    def get_by_rareza(self, rareza: str) -> list[dict]:
+        #Devuelve todas las runas de una rareza.
         conn = get_connection()
         try:
-            conn.execute(
-                "INSERT OR REPLACE INTO contadores_pity (banner, contador) VALUES (?, ?)",
-                (banner, valor)
-            )
-            conn.commit()
-        finally:
-            conn.close()
-
-    def reset_pity(self, banner: str):
-        #Resetea el contador de pity de un banner a 0.
-        conn = get_connection()
-        try:
-            conn.execute(
-                "UPDATE contadores_pity SET contador = 0 WHERE banner = ?", (banner,)
-            )
-            conn.commit()
+            rows = conn.execute(
+                "SELECT * FROM runas_catalogo WHERE rareza = ?", (rareza,)
+            ).fetchall()
+            return [dict(r) for r in rows]
         finally:
             conn.close()

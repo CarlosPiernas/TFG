@@ -1,52 +1,57 @@
 import sqlite3
 from database.db_manager import get_connection
 
-#DATOS EJEMPLO
+#DATOS REALES
 
 #(nombre, faccion, clase, rareza, atk_base, magia_base, pv_base, destreza_base, sprite_id)
+#Stats por clase y rareza según tabla 1.1 del GDD
 PERSONAJES = [
-    #Guardianes
-    ("Guardian_Guerrero_B",  "guardian", "guerrero", "B", 80,  20,  200, 30,  None),
-    ("Guardian_Mago_B",      "guardian", "mago",     "B", 20,  90,  150, 40,  None),
-    ("Guardian_Asesino_B",   "guardian", "asesino",  "B", 60,  30,  160, 80,  None),
-    ("Guardian_Guerrero_A",  "guardian", "guerrero", "A", 100, 25,  240, 35,  None),
-    ("Guardian_Mago_A",      "guardian", "mago",     "A", 25,  110, 180, 45,  None),
-    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 90,  40,  200, 120, None),
+    #Guardianes — 2 por rareza, 1 de cada clase donde aplica
+    ("Guardian_Guerrero_B",  "guardian", "guerrero", "B", 130, 0,   600, 0,   None),
+    ("Guardian_Mago_B",      "guardian", "mago",     "B", 50,  100, 400, 0,   None),
+    ("Guardian_Asesino_B",   "guardian", "asesino",  "B", 110, 0,   500, 50,  None),
+    ("Guardian_Guerrero_A",  "guardian", "guerrero", "A", 156, 0,   720, 0,   None),
+    ("Guardian_Mago_A",      "guardian", "mago",     "A", 60,  120, 480, 0,   None),
+    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 0,   920, 90,  None),
     #Anomalías
-    ("Anomalia_Guerrero_B",  "anomalia", "guerrero", "B", 85,  15,  210, 25,  None),
-    ("Anomalia_Mago_B",      "anomalia", "mago",     "B", 15,  95,  145, 35,  None),
-    ("Anomalia_Asesino_B",   "anomalia", "asesino",  "B", 65,  25,  155, 85,  None),
-    ("Anomalia_Guerrero_A",  "anomalia", "guerrero", "A", 105, 20,  250, 30,  None),
-    ("Anomalia_Mago_A",      "anomalia", "mago",     "A", 20,  115, 175, 40,  None),
-    ("Anomalia_Asesino_S",   "anomalia", "asesino",  "S", 95,  35,  195, 125, None),
+    ("Anomalia_Guerrero_B",  "anomalia", "guerrero", "B", 130, 0,   600, 0,   None),
+    ("Anomalia_Mago_B",      "anomalia", "mago",     "B", 50,  100, 400, 0,   None),
+    ("Anomalia_Asesino_B",   "anomalia", "asesino",  "B", 110, 0,   500, 50,  None),
+    ("Anomalia_Guerrero_A",  "anomalia", "guerrero", "A", 156, 0,   720, 0,   None),
+    ("Anomalia_Mago_A",      "anomalia", "mago",     "A", 60,  120, 480, 0,   None),
+    ("Anomalia_Asesino_S",   "anomalia", "asesino",  "S", 198, 0,   920, 90,  None),
 ]
 
-#(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_destreza, personaje_s_id, efecto_especial)
-#personaje_s_id usa el índice del personaje S en personajes (base 1): Guardian_Asesino_S=6, Anomalia_Asesino_S=12
+#(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, personaje_s_id, efecto_especial)
+#personaje_s_id: Guardian_Asesino_S=6, Anomalia_Asesino_S=12 (ids por orden de inserción)
+#Armas según tabla 1.5 del GDD
 ARMAS = [
-    ("Espada_Basica",    "basica", 20, 0,  0,  0,   None, None),
-    ("Baston_Basico",    "basica", 0,  25, 0,  0,   None, None),
-    ("Daga_Basica",      "basica", 15, 0,  0,  20,  None, None),
-    ("Espada_Basica_2",  "basica", 22, 0,  10, 0,   None, None),
-    ("Baston_Basico_2",  "basica", 0,  28, 5,  0,   None, None),
-    #personaje_s_id se actualiza cuando tengamos los ids reales para el seed
-    ("Hoja_Guardian_S",  "S",      40, 0,  0,  50,  6,    "TODO: efecto especial"),
-    ("Hoja_Anomalia_S",  "S",      45, 0,  0,  55,  12,   "TODO: efecto especial"),
+    #Básicas — una por clase
+    ("Mandoble",         "B", 20, 0,  0, 0,  0,  None, None),
+    ("Baston",           "B", 0,  20, 0, 0,  0,  None, None),
+    ("Daga",             "B", 20, 0,  0, 0,  0,  None, None),
+    #S únicas — efectos especiales pendientes hasta Sprint 4
+    ("Mandoble_Cronos",  "S", 55, 0,  0, 55, 0,  None, "TODO: efecto especial"),
+    ("Cetro_Vacio",      "S", 0,  55, 0, 40, 0,  None, "TODO: efecto especial"),
+    ("Hoja_Espectral",   "S", 25, 0,  0, 0,  50, None, "TODO: efecto especial"),
 ]
 
-#(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_destreza, efecto_especial)
+#(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, efecto_especial)
+#Runas según tablas 1.3 y 1.4 del GDD
 RUNAS = [
-    #Genéricas
-    ("Runa_Ataque",    "generica", 15, 0,  0,   0,  None),
-    ("Runa_Magia",     "generica", 0,  15, 0,   0,  None),
-    ("Runa_Vida",      "generica", 0,  0,  40,  0,  None),
-    ("Runa_Destreza",  "generica", 0,  0,  0,   15, None),
-    ("Runa_Mixta",     "generica", 8,  8,  0,   0,  None),
-    #Únicas S — efectos especiales pendientes de decisión del equipo
-    ("Runa_Guardian_S_1", "unica_S", 0, 0, 0, 0, "TODO: efecto especial"),
-    ("Runa_Guardian_S_2", "unica_S", 0, 0, 0, 0, "TODO: efecto especial"),
-    ("Runa_Anomalia_S_1", "unica_S", 0, 0, 0, 0, "TODO: efecto especial"),
-    ("Runa_Anomalia_S_2", "unica_S", 0, 0, 0, 0, "TODO: efecto especial"),
+    #Básicas
+    ("RUNA_ATAQUE",    "basica", 25, 0,  0, 0,  0,  None),
+    ("RUNA_MAGIA",     "basica", 0,  30, 0, 0,  0,  None),
+    ("RUNA_DEFENSA",   "basica", 0,  0,  0, 20, 0,  None),
+    ("RUNA_DESTREZA",  "basica", 0,  0,  0, 0,  25, None),
+    #Mixtas — resultado del transmutador
+    ("RUNA_ACERO",     "mixta",  30, 0,  0, 20, 0,  None),   # ATAQUE + DEFENSA
+    ("RUNA_CAZA",      "mixta",  20, 0,  0, 0,  25, None),   # ATAQUE + DESTREZA
+    ("RUNA_SOMBRA",    "mixta",  0,  0,  0, 15, 30, None),   # DESTREZA + DEFENSA
+    ("RUNA_ARCANA",    "mixta",  0,  30, 0, 10, 0,  None),   # MAGIA + DEFENSA
+    ("RUNA_GUARDIAN",  "mixta",  0,  0,  0, 40, 0,  None),   # DESTREZA + MAGIA — mayor DEF del juego
+    #Penalización — resultado de combinación inválida en el transmutador
+    ("RUNA_ROTA",      "rota",   0,  0,  0, -40, 0, "Penalización por combinación inválida"),
 ]
 
 #FUNCIONES DE SEED
@@ -75,8 +80,8 @@ def seed_armas(cursor: sqlite3.Cursor):
         return
     cursor.executemany("""
         INSERT INTO armas_catalogo
-            (nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_destreza, personaje_s_id, efecto_especial)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, personaje_s_id, efecto_especial)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, ARMAS)
     print(f"{len(ARMAS)} armas insertadas.")
 
@@ -87,8 +92,8 @@ def seed_runas(cursor: sqlite3.Cursor):
         return
     cursor.executemany("""
         INSERT INTO runas_catalogo
-            (nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_destreza, efecto_especial)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+            (nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, efecto_especial)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, RUNAS)
     print(f"{len(RUNAS)} runas insertadas.")
 
@@ -99,8 +104,9 @@ def seed_recursos(cursor: sqlite3.Cursor):
         return
     cursor.execute("""
         INSERT INTO recursos_jugador
-            (id, tickets_personaje, tickets_arma, moneda_premium, pociones, pociones_max, ultima_regen)
-        VALUES (1, 10, 5, 100, 5, 5, NULL)
+            (id, tickets_personaje, tickets_arma, moneda_premium, pociones, pociones_max,
+             ultima_regen, fragmentos_rojos, fragmentos_azules)
+        VALUES (1, 10, 5, 100, 5, 5, NULL, 0, 0)
     """)
     print("Recursos iniciales insertados.")
 
@@ -109,9 +115,10 @@ def seed_pity(cursor: sqlite3.Cursor):
     if not _tabla_vacia(cursor, "contadores_pity"):
         print("contadores_pity ya tiene datos.")
         return
+    #jugador_id = 1 siempre por ahora — un solo jugador local
     cursor.executemany(
-        "INSERT INTO contadores_pity (banner, contador) VALUES (?, ?)",
-        [("personajes", 0), ("armas", 0)]
+        "INSERT INTO contadores_pity (jugador_id, banner, contador) VALUES (?, ?, ?)",
+        [(1, "personajes", 0), (1, "armas", 0)]
     )
     print("Contadores de pity insertados.")
 
@@ -120,12 +127,18 @@ def seed_mapa(cursor: sqlite3.Cursor):
     if not _tabla_vacia(cursor, "progreso_mapa"):
         print("progreso_mapa ya tiene datos.")
         return
+    #10 nodos según tabla 2.1 del GDD — nodo 1 desbloqueado, resto bloqueados
     nodos = [
-        (1, "disponible", 0, 0),  # El nodo 1 empieza desbloqueado
-        (2, "bloqueado",  0, 0),
-        (3, "bloqueado",  0, 0),
-        (4, "bloqueado",  0, 0),
-        (5, "bloqueado",  0, 0),
+        (1,  "disponible", 0, 0),
+        (2,  "bloqueado",  0, 0),
+        (3,  "bloqueado",  0, 0),
+        (4,  "bloqueado",  0, 0),
+        (5,  "bloqueado",  0, 0),   # KRONOS — jefe
+        (6,  "bloqueado",  0, 0),
+        (7,  "bloqueado",  0, 0),
+        (8,  "bloqueado",  0, 0),
+        (9,  "bloqueado",  0, 0),
+        (10, "bloqueado",  0, 0),   # KRONOS DEFINITIVO — jefe final
     ]
     cursor.executemany("""
         INSERT INTO progreso_mapa (nodo_id, estado, estrellas, intentos)
