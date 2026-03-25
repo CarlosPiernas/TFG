@@ -1,6 +1,6 @@
 import random
 from database.repositories import recursos_repo, pity_repo, inventario_repo
-from config import GACHA_MODE
+from database.config import GACHA_MODE
 
 #Constantes
 BASE_RATE_S         = 0.006

@@ -1,0 +1,1 @@
+GACHA_MODE = "simple"
