@@ -56,8 +56,9 @@ class RecursosRepo:
             return row["monedas"] if row else 0
         finally:
             conn.close()
+            
     def get_transmutadores(self) -> int:
-    #Devuelve los transmutadores disponibles del jugador.
+        #Devuelve los transmutadores disponibles del jugador.
         conn = get_connection()
         try:
             row = conn.execute(
