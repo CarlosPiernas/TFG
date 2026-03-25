@@ -17,6 +17,14 @@ class RecursosRepo:
 
     def add_recurso(self, tipo: str, cantidad: int):
         #Suma cantidad al recurso indicado. Usar cantidad negativa para restar.
+        #Solo acepta columnas válidas.
+        columnas_validas = {
+            "monedas", "tickets_personaje", "tickets_arma",
+            "pociones", "transmutadores",
+            "fragmentos_rojos", "fragmentos_azules"
+        }
+        if tipo not in columnas_validas:
+            raise ValueError(f"Columna no válida: {tipo}")
         conn = get_connection()
         try:
             conn.execute(
@@ -35,6 +43,27 @@ class RecursosRepo:
                 "SELECT pociones, pociones_max FROM recursos_jugador WHERE id = 1"
             ).fetchone()
             return dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_monedas(self) -> int:
+        #Devuelve las monedas actuales del jugador.
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT monedas FROM recursos_jugador WHERE id = 1"
+            ).fetchone()
+            return row["monedas"] if row else 0
+        finally:
+            conn.close()
+    def get_transmutadores(self) -> int:
+    #Devuelve los transmutadores disponibles del jugador.
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT transmutadores FROM recursos_jugador WHERE id = 1"
+            ).fetchone()
+            return row["transmutadores"] if row else 0
         finally:
             conn.close()
 

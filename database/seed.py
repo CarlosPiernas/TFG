@@ -3,23 +3,23 @@ from database.db_manager import get_connection
 
 #DATOS REALES
 
-#(nombre, faccion, clase, rareza, atk_base, magia_base, pv_base, destreza_base, sprite_id)
+#(nombre, faccion, clase, rareza, atk_base, defensa_base, magia_base, pv_base, destreza_base, sprite_id)
 #Stats por clase y rareza según tabla 1.1 del GDD
 PERSONAJES = [
-    #Guardianes — 2 por rareza, 1 de cada clase donde aplica
-    ("Guardian_Guerrero_B",  "guardian", "guerrero", "B", 130, 0,   600, 0,   None),
-    ("Guardian_Mago_B",      "guardian", "mago",     "B", 50,  100, 400, 0,   None),
-    ("Guardian_Asesino_B",   "guardian", "asesino",  "B", 110, 0,   500, 50,  None),
-    ("Guardian_Guerrero_A",  "guardian", "guerrero", "A", 156, 0,   720, 0,   None),
-    ("Guardian_Mago_A",      "guardian", "mago",     "A", 60,  120, 480, 0,   None),
-    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 0,   920, 90,  None),
-    #Anomalías
-    ("Anomalia_Guerrero_B",  "anomalia", "guerrero", "B", 130, 0,   600, 0,   None),
-    ("Anomalia_Mago_B",      "anomalia", "mago",     "B", 50,  100, 400, 0,   None),
-    ("Anomalia_Asesino_B",   "anomalia", "asesino",  "B", 110, 0,   500, 50,  None),
-    ("Anomalia_Guerrero_A",  "anomalia", "guerrero", "A", 156, 0,   720, 0,   None),
-    ("Anomalia_Mago_A",      "anomalia", "mago",     "A", 60,  120, 480, 0,   None),
-    ("Anomalia_Asesino_S",   "anomalia", "asesino",  "S", 198, 0,   920, 90,  None),
+    #Guardianes — B: Guerrero + Mago | A: Guerrero + Asesino | S: Asesino + Mago
+    ("Guardian_Guerrero_B",  "guardian", "guerrero", "B", 130, 100, 0,   600, 0,   None),
+    ("Guardian_Mago_B",      "guardian", "mago",     "B", 50,  80,  100, 400, 0,   None),
+    ("Guardian_Guerrero_A",  "guardian", "guerrero", "A", 156, 120, 0,   720, 0,   None),
+    ("Guardian_Asesino_A",   "guardian", "asesino",  "A", 132, 108, 0,   600, 60,  None),
+    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 165, 0,   920, 90,  None),
+    ("Guardian_Mago_S",      "guardian", "mago",     "S", 90,  200, 185, 750, 0,   None),
+    #Anomalías — B: Guerrero + Asesino | A: Asesino + Mago | S: Guerrero + Mago
+    ("Anomalia_Guerrero_B",  "anomalia", "guerrero", "B", 130, 100, 0,   600, 0,   None),
+    ("Anomalia_Asesino_B",   "anomalia", "asesino",  "B", 110, 90,  0,   500, 50,  None),
+    ("Anomalia_Asesino_A",   "anomalia", "asesino",  "A", 132, 108, 0,   600, 60,  None),
+    ("Anomalia_Mago_A",      "anomalia", "mago",     "A", 60,  96,  120, 480, 0,   None),
+    ("Anomalia_Guerrero_S",  "anomalia", "guerrero", "S", 240, 195, 0,   1100, 0,  None),
+    ("Anomalia_Mago_S",      "anomalia", "mago",     "S", 90,  200, 185, 750, 0,   None),
 ]
 
 #(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, personaje_s_id, efecto_especial)
@@ -68,8 +68,8 @@ def seed_personajes(cursor: sqlite3.Cursor):
         return
     cursor.executemany("""
         INSERT INTO personajes_catalogo
-            (nombre, faccion, clase, rareza, atk_base, magia_base, pv_base, destreza_base, sprite_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (nombre, faccion, clase, rareza, atk_base, defensa_base, magia_base, pv_base, destreza_base, sprite_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, PERSONAJES)
     print(f"{len(PERSONAJES)} personajes insertados.")
 
@@ -104,9 +104,9 @@ def seed_recursos(cursor: sqlite3.Cursor):
         return
     cursor.execute("""
         INSERT INTO recursos_jugador
-            (id, tickets_personaje, tickets_arma, moneda_premium, pociones, pociones_max,
-             ultima_regen, fragmentos_rojos, fragmentos_azules)
-        VALUES (1, 10, 5, 100, 5, 5, NULL, 0, 0)
+            (id, monedas, tickets_personaje, tickets_arma, pociones, pociones_max,
+            ultima_regen, transmutadores, fragmentos_rojos, fragmentos_azules)
+        VALUES (1, 0, 10, 5, 5, 10, NULL, 0, 0, 0)
     """)
     print("Recursos iniciales insertados.")
 

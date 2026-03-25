@@ -32,6 +32,7 @@ def initialize_db():
                 clase           TEXT    NOT NULL,   
                 rareza          TEXT    NOT NULL,   
                 atk_base        INTEGER NOT NULL DEFAULT 0,
+                defensa_base    INTEGER NOT NULL DEFAULT 0,
                 magia_base      INTEGER NOT NULL DEFAULT 0,
                 pv_base         INTEGER NOT NULL DEFAULT 0,
                 destreza_base   INTEGER NOT NULL DEFAULT 0,
@@ -119,10 +120,11 @@ def initialize_db():
                 id                  INTEGER PRIMARY KEY CHECK (id = 1),
                 tickets_personaje   INTEGER NOT NULL DEFAULT 0,
                 tickets_arma        INTEGER NOT NULL DEFAULT 0,
-                moneda_premium      INTEGER NOT NULL DEFAULT 0,
+                monedas      INTEGER NOT NULL DEFAULT 0,
                 pociones            INTEGER NOT NULL DEFAULT 5,
                 pociones_max        INTEGER NOT NULL DEFAULT 5,    -- para saber si necesita regenerar o no
                 ultima_regen        TEXT,                          -- para calcular próxima regeneración
+                transmutadores      INTEGER NOT NULL DEFAULT 0,  --transmutadores para la fusión de runas
                 fragmentos_rojos    INTEGER NOT NULL DEFAULT 0,   -- por personaje duplicado en gacha
                 fragmentos_azules   INTEGER NOT NULL DEFAULT 0    -- por arma duplicada en gacha
             )
