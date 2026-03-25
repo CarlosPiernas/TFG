@@ -107,7 +107,7 @@ def realizar_pull(jugador_id: int, banner: str, faccion: str) -> dict:
 
     return {
         "item":       item,
-        "rareza":     rareza,
+        "rareza":     item["rareza"],
         "pity_count": nuevo_pity_count,
         "es_nuevo":   es_nuevo,
         "fragmento":  None if es_nuevo else tipo_fragmento,
@@ -120,8 +120,20 @@ def realizar_multi_pull(jugador_id: int, banner: str, faccion: str) -> list[dict
     if tickets < 10:
         return [{"error": "tickets_insuficientes"}]
 
+    #Verificar que el pool no está vacío antes de consumir nada
+    #Hacemos una tirada de prueba sin tocar la BD para comprobar que hay items
+    rareza_prueba = _determinar_rareza(0)
+    item_prueba   = _seleccionar_item(rareza_prueba, banner, faccion)
+    if item_prueba is None:
+        return [{"error": "pool_vacio"}]
+
+    #Todo en orden — ejecutar los 10 pulls
     resultados = []
     for i in range(10):
         resultado = realizar_pull(jugador_id, banner, faccion)
+        #Si falla un pull intermedio, devolvemos lo que se pudo y paramos
+        if "error" in resultado:
+            resultados.append(resultado)
+            break
         resultados.append(resultado)
     return resultados

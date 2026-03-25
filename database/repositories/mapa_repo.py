@@ -26,32 +26,28 @@ class MapaRepo:
         finally:
             conn.close()
 
-    def completar_nodo(self, nodo_id: int, estrellas: int):
-        #Marca un nodo como completado y desbloquea el siguiente.
-        #Guarda las estrellas solo si son mejores que las anteriores.
-        conn = get_connection()
-        try:
-            conn.execute("""
-                UPDATE progreso_mapa
-                SET estado = 'completado', estrellas = MAX(estrellas, ?)
-                WHERE nodo_id = ?
-            """, (estrellas, nodo_id))
+def completar_nodo(self, nodo_id: int, estrellas: int):
+    #Marca un nodo como completado y desbloquea el siguiente si existe.
+    #Guarda las estrellas solo si son mejores que las anteriores.
+    conn = get_connection()
+    try:
+        conn.execute("""
+            UPDATE progreso_mapa
+            SET estado = 'completado', estrellas = MAX(estrellas, ?)
+            WHERE nodo_id = ?
+        """, (estrellas, nodo_id))
+
+        #Comprobar que el siguiente nodo existe antes de intentar desbloquearlo
+        siguiente = conn.execute(
+            "SELECT nodo_id FROM progreso_mapa WHERE nodo_id = ?", (nodo_id + 1,)
+        ).fetchone()
+
+        if siguiente is not None:
             conn.execute("""
                 UPDATE progreso_mapa SET estado = 'disponible'
                 WHERE nodo_id = ? AND estado = 'bloqueado'
             """, (nodo_id + 1,))
-            conn.commit()
-        finally:
-            conn.close()
 
-    def incrementar_intentos(self, nodo_id: int):
-        #Suma 1 al contador de intentos de un nodo.
-        conn = get_connection()
-        try:
-            conn.execute("""
-                UPDATE progreso_mapa SET intentos = intentos + 1
-                WHERE nodo_id = ?
-            """, (nodo_id,))
-            conn.commit()
-        finally:
-            conn.close()
+        conn.commit()
+    finally:
+        conn.close()
