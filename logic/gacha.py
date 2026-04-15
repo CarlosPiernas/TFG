@@ -1,5 +1,5 @@
 import random
-from database.repositories import recursos_repo, pity_repo, inventario_repo
+from database.repositories import historial_repo, recursos_repo, pity_repo, inventario_repo
 from database.config import GACHA_MODE
 
 #Constantes
@@ -105,6 +105,15 @@ def realizar_pull(jugador_id: int, banner: str, faccion: str) -> dict:
         #Duplicado — convertir en fragmento según tipo de banner
         recursos_repo.agregar_fragmento(jugador_id, tipo_fragmento, cantidad=1)
 
+    historial_repo.registrar_tirada(
+        jugador_id  = jugador_id,
+        banner      = banner,
+        tipo        = item["tipo"],
+        catalogo_id = item["id"],
+        rareza      = rareza,
+        es_nuevo    = es_nuevo,
+    )
+
     return {
         "item":       item,
         "rareza":     item["rareza"],
@@ -112,6 +121,7 @@ def realizar_pull(jugador_id: int, banner: str, faccion: str) -> dict:
         "es_nuevo":   es_nuevo,
         "fragmento":  None if es_nuevo else tipo_fragmento,
     }
+    
 
 #Multi-pull x10
 def realizar_multi_pull(jugador_id: int, banner: str, faccion: str) -> list[dict]:
