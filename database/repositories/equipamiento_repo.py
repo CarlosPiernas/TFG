@@ -18,8 +18,14 @@ class EquipamientoRepo:
             conn.close()
 
     def equipar(self, personaje_inv_id: int, slot: str, item_inv_id: int):
-        #Equipa un ítem en un slot de un personaje.
-        #Si ya había algo en ese slot lo reemplaza automáticamente.
+        # Si es slot de arma, valida restricción S antes de equipar
+        if slot == "arma":
+            arma_row = get_connection().execute(
+                "SELECT catalogo_id FROM inventario_jugador WHERE id = ?",
+                (item_inv_id,)
+            ).fetchone()
+            if arma_row and not self.validar_arma_s(personaje_inv_id, arma_row["catalogo_id"]):
+                raise ValueError("Este arma S no puede equiparla este personaje.")
         conn = get_connection()
         try:
             conn.execute("""
@@ -52,5 +58,35 @@ class EquipamientoRepo:
                 (personaje_inv_id,)
             )
             conn.commit()
+        finally:
+            conn.close()
+    
+    def validar_arma_s(self, personaje_inv_id: int, arma_catalogo_id: int) -> bool:
+        # Comprueba que un arma S puede ser equipada por el personaje.
+        # Si el arma no es S o no tiene restricción devuelve True directamente.
+        # Si tiene personaje_s_id, comprueba que coincide con el personaje.
+        conn = get_connection()
+        try:
+            # Obtenemos la rareza y la restricción del arma
+            arma = conn.execute(
+                "SELECT rareza, personaje_s_id FROM armas_catalogo WHERE id = ?",
+                (arma_catalogo_id,)
+            ).fetchone()
+            if arma is None:
+                return False
+            # Si no es S no hay restricción
+            if arma["rareza"] != "S":
+                return True
+            # Si es S pero no tiene personaje asignado la puede equipar cualquiera
+            if arma["personaje_s_id"] is None:
+                return True
+            # Obtenemos el catalogo_id del personaje desde su id de inventario
+            personaje = conn.execute(
+                "SELECT catalogo_id FROM inventario_jugador WHERE id = ?",
+                (personaje_inv_id,)
+            ).fetchone()
+            if personaje is None:
+                return False
+            return personaje["catalogo_id"] == arma["personaje_s_id"]
         finally:
             conn.close()

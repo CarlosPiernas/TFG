@@ -2,4 +2,9 @@ venv/
 __pycache__/
 *.pyc
 .idea/
+<<<<<<< HEAD
 firebase/clave-firebase.json
+=======
+firebase/clave-firebase.json
+data/game.db
+>>>>>>> d9995b5 (feat: equipamiento, historial gacha y enemy_loader — sprints 2-4 adelantados)

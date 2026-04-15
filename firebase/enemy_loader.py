@@ -11,7 +11,11 @@ Uso:
     jefe    = loader.crear_enemigo(nodo_id=5)   # EnemigoJefe
 """
 
+import json
 import sys, os, importlib
+
+# Ruta al JSON local como fallback mientras Firebase no está listo
+_ruta_json = os.path.join(os.path.dirname(__file__), "..", "database", "enemigos.json")
 
 # Asegurar que la raíz del proyecto está en el path
 _ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -77,3 +81,22 @@ class EnemyLoader:
         fb_estado = self._fb.estado()
         todos = self._fb.get_todos_enemigos()
         return {**fb_estado, "enemigos_disponibles": len(todos), "nodos": sorted(todos.keys())}
+    
+    def get_enemigo_por_nodo(nodo_id: int) -> dict | None:
+    # Devuelve los stats del enemigo de un nodo como dict.
+    # Devuelve None si el nodo no existe.
+        try:
+            with open(_ruta_json, "r", encoding="utf-8") as f:
+                datos = json.load(f)
+            clave = f"nivel{nodo_id}"
+            enemigo = datos["enemigos"].get(clave)
+            if enemigo is None:
+                return None
+            return {
+                "nombre":  enemigo["nombre"],
+                "hp":      int(enemigo["hp"]),
+                "atk":     int(enemigo["atk"]),
+                "def":     int(enemigo["def"]),
+            }
+        except (FileNotFoundError, KeyError, ValueError):
+            return None
