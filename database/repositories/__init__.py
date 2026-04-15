@@ -6,6 +6,7 @@ from .recursos_repo  import RecursosRepo
 from .pity_repo      import PityRepo
 from .equipamiento_repo import EquipamientoRepo
 from .mapa_repo         import MapaRepo
+from .historial_repo import HistorialRepo
 
 personaje_repo  = PersonajeRepo()
 arma_repo       = ArmaRepo()
@@ -15,3 +16,4 @@ recursos_repo   = RecursosRepo()
 pity_repo       = PityRepo()
 equipamiento_repo = EquipamientoRepo()
 mapa_repo         = MapaRepo()
+historial_repo = HistorialRepo()

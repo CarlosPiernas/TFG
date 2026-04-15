@@ -131,6 +131,20 @@ def initialize_db():
             )
         """)
 
+        # Historial de tiradas gacha
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS historial_gacha (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                jugador_id  INTEGER NOT NULL,
+                banner      TEXT    NOT NULL,  -- 'personajes' | 'armas'
+                tipo        TEXT    NOT NULL,  -- 'personaje' | 'arma'
+                catalogo_id INTEGER NOT NULL,  -- id del ítem obtenido
+                rareza      TEXT    NOT NULL,  -- 'B' | 'A' | 'S'
+                es_nuevo    INTEGER NOT NULL,  -- 1 nuevo | 0 duplicado
+                fecha       TEXT    NOT NULL   -- timestamp ISO
+            )
+        """)
+
         conn.commit()
         print("Base de datos inicializada correctamente.")
     except sqlite3.Error as e:
