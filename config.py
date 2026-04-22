@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+GACHA_MODE = "simple"
+# Convierte un color hexadecimal (#RRGGBB) a tupla RGBA que entiende Kivy
+>>>>>>> 479e166984642de2fd9821b1f3dc4ada3a475b70
 def hex_to_kivy(hex_color):
     h = hex_color.lstrip('#')
     r, g, b = tuple(int(h[i:i+2], 16) / 255 for i in (0, 2, 4))
