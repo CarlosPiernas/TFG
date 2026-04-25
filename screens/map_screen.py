@@ -1,10 +1,3 @@
-# =============================================================================
-# screens/map_screen.py
-# Pantalla del mapa — Sprint 2
-# Nodos estilo Candy Crush con estetica oscura y siniestra.
-# Incluye modo Hard que cambia el aspecto visual de los nodos.
-# =============================================================================
-
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
@@ -15,16 +8,14 @@ from kivy.metrics import dp
 from config import FONDO_SELECCION
 from widgets.componentes import BotonRedondeado
 
-# ── Datos de los nodos ────────────────────────────────────────────────────────
 NODOS = [
-    {'nombre': 'ENTRADA',    'icono': 'I',   'jefe': False},
-    {'nombre': 'PASAJE',     'icono': 'II',  'jefe': False},
-    {'nombre': 'CRIPTA',     'icono': 'III', 'jefe': False},
-    {'nombre': 'ABISMO',     'icono': 'IV',  'jefe': False},
-    {'nombre': 'JEFE FINAL', 'icono': 'V',   'jefe': True },
+    {'nombre': 'ENTRADA',    'icono': 'I',   'jefe': False, 'enemigo': 'PLACEHOLDER'},
+    {'nombre': 'PASAJE',     'icono': 'II',  'jefe': False, 'enemigo': 'PLACEHOLDER'},
+    {'nombre': 'CRIPTA',     'icono': 'III', 'jefe': False, 'enemigo': 'PLACEHOLDER'},
+    {'nombre': 'ABISMO',     'icono': 'IV',  'jefe': False, 'enemigo': 'PLACEHOLDER'},
+    {'nombre': 'JEFE FINAL', 'icono': 'V',   'jefe': True,  'enemigo': 'PLACEHOLDER'},
 ]
 
-# Posiciones de cada nodo en porcentaje de pantalla (x, y)
 POSICIONES = [
     (0.5,  0.13),
     (0.25, 0.30),
@@ -33,7 +24,7 @@ POSICIONES = [
     (0.5,  0.80),
 ]
 
-# ── Paleta modo NORMAL ────────────────────────────────────────────────────────
+# Paleta modo NORMAL 
 NORMAL_NODO_BLOQUEADO_FONDO  = (0.08, 0.08, 0.12, 0.92)
 NORMAL_NODO_BLOQUEADO_BORDE  = (0.25, 0.25, 0.35, 1)
 NORMAL_NODO_BLOQUEADO_TEXTO  = (0.4,  0.4,  0.5,  1)
@@ -53,8 +44,7 @@ NORMAL_LINEA_COLOR           = (0.45, 0.2,  0.6,  0.9)
 NORMAL_ETIQUETA_JEFE         = (0.9,  0.75, 0.3,  1)
 NORMAL_ETIQUETA_NODO         = (0.75, 0.75, 0.75, 1)
 
-# ── Paleta modo HARD ─────────────────────────────────────────────────────────
-# Todo se vuelve rojizo, oscuro y amenazante
+# Paleta modo HARD
 HARD_NODO_BLOQUEADO_FONDO    = (0.12, 0.02, 0.02, 0.95)
 HARD_NODO_BLOQUEADO_BORDE    = (0.35, 0.08, 0.08, 1)
 HARD_NODO_BLOQUEADO_TEXTO    = (0.35, 0.1,  0.1,  1)
@@ -74,7 +64,7 @@ HARD_LINEA_COLOR             = (0.7,  0.1,  0.1,  0.9)
 HARD_ETIQUETA_JEFE           = (1.0,  0.3,  0.1,  1)
 HARD_ETIQUETA_NODO           = (0.75, 0.3,  0.3,  1)
 
-# ── Colores del boton de dificultad ──────────────────────────────────────────
+# Colores del boton de dificultad
 BOTON_HARD_FONDO    = (0.55, 0.05, 0.05, 1)
 BOTON_HARD_BORDE    = (0.85, 0.15, 0.15, 1)
 BOTON_HARD_TEXTO    = (1.0,  0.85, 0.85, 1)
@@ -85,20 +75,18 @@ BOTON_NORMAL_TEXTO  = (0.7,  0.7,  0.85, 1)
 
 
 class _NodoWidget(Widget):
-    """
-    Widget que representa un nodo del mapa.
-    Acepta una paleta de colores para poder cambiar entre modo normal y hard.
-    """
-    def __init__(self, icono, jefe=False, desbloqueado=False, paleta=None, **kwargs):
+    def __init__(self, icono, jefe=False, desbloqueado=False, paleta=None,
+                 nombreJugador='NEXPAS', nombreEnemigo='PLACEHOLDER', **kwargs):
         super().__init__(**kwargs)
-        self.icono        = icono
-        self.jefe         = jefe
-        self.desbloqueado = desbloqueado
-        self.paleta       = paleta or 'normal'
+        self.icono          = icono
+        self.jefe           = jefe
+        self.desbloqueado   = desbloqueado
+        self.paleta         = paleta or 'normal'
+        self.nombreJugador  = nombreJugador
+        self.nombreEnemigo  = nombreEnemigo
         self.bind(pos=self._dibujar, size=self._dibujar)
 
     def cambiarPaleta(self, paleta):
-        # Cambia la paleta de colores y redibuja el nodo
         self.paleta = paleta
         self._dibujar()
 
@@ -108,9 +96,6 @@ class _NodoWidget(Widget):
         w, h = self.size
         cx, cy = x + w / 2, y + h / 2
         r = min(w, h) / 2
-
-        # Selecciona la paleta correcta segun el modo
-        p = HARD_NODO_JEFE_FONDO if self.paleta == 'hard' else NORMAL_NODO_JEFE_FONDO
 
         with self.canvas:
             if self.jefe:
@@ -124,21 +109,20 @@ class _NodoWidget(Widget):
                 Color(*borde2)
                 Line(circle=(cx, cy, r - dp(8)), width=1.2)
             elif self.desbloqueado:
-                fondo  = HARD_NODO_LIBRE_FONDO  if self.paleta == 'hard' else NORMAL_NODO_LIBRE_FONDO
-                borde  = HARD_NODO_LIBRE_BORDE  if self.paleta == 'hard' else NORMAL_NODO_LIBRE_BORDE
+                fondo = HARD_NODO_LIBRE_FONDO if self.paleta == 'hard' else NORMAL_NODO_LIBRE_FONDO
+                borde = HARD_NODO_LIBRE_BORDE if self.paleta == 'hard' else NORMAL_NODO_LIBRE_BORDE
                 Color(*fondo)
                 Ellipse(pos=(x, y), size=(w, h))
                 Color(*borde)
                 Line(circle=(cx, cy, r - dp(3)), width=2.0)
             else:
-                fondo  = HARD_NODO_BLOQUEADO_FONDO  if self.paleta == 'hard' else NORMAL_NODO_BLOQUEADO_FONDO
-                borde  = HARD_NODO_BLOQUEADO_BORDE  if self.paleta == 'hard' else NORMAL_NODO_BLOQUEADO_BORDE
+                fondo = HARD_NODO_BLOQUEADO_FONDO if self.paleta == 'hard' else NORMAL_NODO_BLOQUEADO_FONDO
+                borde = HARD_NODO_BLOQUEADO_BORDE if self.paleta == 'hard' else NORMAL_NODO_BLOQUEADO_BORDE
                 Color(*fondo)
                 Ellipse(pos=(x, y), size=(w, h))
                 Color(*borde)
                 Line(circle=(cx, cy, r - dp(3)), width=1.5)
 
-        # Etiqueta con el icono del nodo
         for child in self.children[:]:
             self.remove_widget(child)
 
@@ -162,12 +146,31 @@ class _NodoWidget(Widget):
         lbl.bind(size=lbl.setter('text_size'))
         self.add_widget(lbl)
 
+    def on_touch_down(self, touch):
+        x, y = self.pos
+        w, h = self.size
+        cx, cy = x + w / 2, y + h / 2
+        r = min(w, h) / 2
+        dx = touch.x - cx
+        dy = touch.y - cy
+
+        if dx * dx + dy * dy <= r * r:
+            if self.desbloqueado:
+                widget = self.parent
+                while widget and not hasattr(widget, 'manager'):
+                    widget = widget.parent
+
+                if widget:
+                    pantallaCombate = widget.manager.get_screen('combate')
+                    pantallaCombate.cargarCombate(self.nombreJugador, self.nombreEnemigo)
+                    widget.manager.transition = SlideTransition(direction='left')
+                    widget.manager.current = 'combate'
+            return True
+
+        return super().on_touch_down(touch)
+
 
 class _LineasConexion(Widget):
-    """
-    Widget que dibuja las lineas que conectan los nodos del mapa.
-    Tambien cambia de color segun el modo de dificultad.
-    """
     def __init__(self, posiciones, paleta='normal', **kwargs):
         super().__init__(**kwargs)
         self.posiciones = posiciones
@@ -201,15 +204,10 @@ class _LineasConexion(Widget):
 
 
 class _BotonOvalo(Widget):
-    """
-    Boton con forma de ovalo dibujado en canvas.
-    Detecta toques dentro del area del ovalo matematicamente.
-    Cambia su texto y colores al pulsarlo para indicar el modo activo.
-    """
     def __init__(self, callback, **kwargs):
         super().__init__(**kwargs)
-        self.callback  = callback
-        self.modoHard  = False
+        self.callback = callback
+        self.modoHard = False
         self.bind(pos=self._dibujar, size=self._dibujar)
 
     def _dibujar(self, *args):
@@ -217,10 +215,10 @@ class _BotonOvalo(Widget):
         x, y = self.pos
         w, h = self.size
 
-        fondo  = BOTON_HARD_FONDO   if not self.modoHard else BOTON_NORMAL_FONDO
-        borde  = BOTON_HARD_BORDE   if not self.modoHard else BOTON_NORMAL_BORDE
-        texto  = 'HARD'             if not self.modoHard else 'NORMAL'
-        colorT = BOTON_HARD_TEXTO   if not self.modoHard else BOTON_NORMAL_TEXTO
+        fondo  = BOTON_HARD_FONDO  if not self.modoHard else BOTON_NORMAL_FONDO
+        borde  = BOTON_HARD_BORDE  if not self.modoHard else BOTON_NORMAL_BORDE
+        texto  = 'HARD'            if not self.modoHard else 'NORMAL'
+        colorT = BOTON_HARD_TEXTO  if not self.modoHard else BOTON_NORMAL_TEXTO
 
         with self.canvas:
             Color(*fondo)
@@ -245,7 +243,6 @@ class _BotonOvalo(Widget):
         self.add_widget(lbl)
 
     def on_touch_down(self, touch):
-        # Comprueba si el toque cae dentro del ovalo usando la formula de la elipse
         x, y = self.pos
         w, h = self.size
         cx, cy = x + w / 2, y + h / 2
@@ -263,16 +260,12 @@ class _BotonOvalo(Widget):
 class PantallaMapa(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        # Fondo con imagen
         with self.canvas.before:
             Color(1, 1, 1, 1)
             self._bg_rect = Rectangle(source=FONDO_SELECCION, pos=self.pos, size=self.size)
         self.bind(pos=self._actualizarFondo, size=self._actualizarFondo)
 
         raiz = FloatLayout()
-
-        # Overlay oscuro encima del fondo
         overlayWidget = Widget(size_hint=(1, 1))
         with overlayWidget.canvas:
             Color(0, 0, 0, 0.45)
@@ -282,15 +275,11 @@ class PantallaMapa(Screen):
             size=lambda *a: setattr(self._overlay, 'size', overlayWidget.size)
         )
         raiz.add_widget(overlayWidget)
-
-        # Lineas de conexion — se guardan para poder cambiar su paleta
         self.lineasConexion = _LineasConexion(
             POSICIONES, paleta='normal',
             size_hint=(1, 1), pos_hint={'x': 0, 'y': 0}
         )
         raiz.add_widget(self.lineasConexion)
-
-        # Titulo
         titulo = Label(
             text='— CAMPAÑA —',
             font_size=dp(22),
@@ -304,8 +293,6 @@ class PantallaMapa(Screen):
         )
         titulo.bind(size=titulo.setter('text_size'))
         raiz.add_widget(titulo)
-
-        # Nodos — se guardan en lista para poder cambiar su paleta despues
         self.listaNodos     = []
         self.listaEtiquetas = []
 
@@ -318,6 +305,8 @@ class PantallaMapa(Screen):
                 jefe=jefe,
                 desbloqueado=(i == 0),
                 paleta='normal',
+                nombreJugador='NEXPAS',        
+                nombreEnemigo=datos['enemigo'],  
                 size_hint=(None, None),
                 size=(tam, tam),
                 pos_hint={'center_x': px, 'center_y': py}
@@ -339,8 +328,6 @@ class PantallaMapa(Screen):
             etiqueta.bind(size=etiqueta.setter('text_size'))
             raiz.add_widget(etiqueta)
             self.listaEtiquetas.append((etiqueta, jefe))
-
-        # Boton volver — parte inferior izquierda
         botonVolver = BotonRedondeado(
             text='VOLVER',
             bg_color=(0.05, 0.05, 0.1, 0.9),
@@ -354,8 +341,6 @@ class PantallaMapa(Screen):
         )
         botonVolver.bind(on_press=lambda _: self.navegarA('principal'))
         raiz.add_widget(botonVolver)
-
-        # Boton Hard/Normal — parte derecha central, forma de ovalo
         self.botonDificultad = _BotonOvalo(
             callback=self.cambiarDificultad,
             size_hint=(None, None),
@@ -367,22 +352,13 @@ class PantallaMapa(Screen):
         self.add_widget(raiz)
 
     def cambiarDificultad(self, modoHard):
-        """
-        Cambia la paleta visual de todos los nodos y lineas del mapa.
-        Cuando modoHard es True todo se vuelve rojizo y amenazante.
-        Cuando es False vuelve a los colores normales purpura/dorado.
-        TODO: avisar a M2 del modo activo para cargar enemigos correctos.
-        """
         paleta = 'hard' if modoHard else 'normal'
 
-        # Cambia todos los nodos
         for nodo in self.listaNodos:
             nodo.cambiarPaleta(paleta)
 
-        # Cambia las lineas de conexion
         self.lineasConexion.cambiarPaleta(paleta)
 
-        # Cambia el color de las etiquetas de nombre
         for etiqueta, jefe in self.listaEtiquetas:
             if modoHard:
                 etiqueta.color = HARD_ETIQUETA_JEFE if jefe else HARD_ETIQUETA_NODO
