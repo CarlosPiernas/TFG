@@ -266,29 +266,53 @@ class PantallaPrincipal(Screen):
             self._bg_rect.source = FONDO_GUARDIANES
             self.etiquetaFaccion.text  = 'Guardianes'
             self.etiquetaFaccion.color = COLOR_GUARDIANES
-        self._bg_rect.source = self._bg_rect.source  # fuerza reload
 
         # Sprite del personaje
-        sprite = info.get('sprite', '') or ''
+        sprite = info.get('sprite_id', '') or ''
         self.imagenPersonaje.source = sprite
         if sprite:
             self.imagenPersonaje.reload()
 
-        # Stats base
+        # Resolver nombres de arma y runas desde el inventario
+        equipo = info.get('equipo', [])
+        nombre_arma = '—'
+        nombres_runas = []
+
+        from database.repositories import inventario_repo, arma_repo, runa_repo
+        inv_completo = inventario_repo.get_inventario()
+        inv_por_id = {item['id']: item for item in inv_completo}
+
+        for slot_info in equipo:
+            slot       = slot_info.get('slot', '')
+            item_inv_id = slot_info.get('item_inv_id')
+            inv_item   = inv_por_id.get(item_inv_id)
+            if inv_item is None:
+                continue
+
+            if slot == 'arma':
+                datos_arma = arma_repo.get_by_id(inv_item['catalogo_id'])
+                if datos_arma:
+                    nombre_arma = datos_arma.get('nombre', '—')
+
+            elif slot.startswith('runa_'):
+                datos_runa = runa_repo.get_by_id(inv_item['catalogo_id'])
+                if datos_runa:
+                    nombres_runas.append(datos_runa.get('nombre', '?'))
+
+        # Stats base + arma equipada
         self.bloqueStats.text = (
             f"STATS\n\n"
             f"HP:  {info.get('pv_base', '—')}\n"
             f"ATK: {info.get('atk_base', '—')}\n"
-            f"DEF: {info.get('defensa_base', '—')}"
+            f"DEF: {info.get('defensa_base', '—')}\n\n"
+            f"Arma: {nombre_arma}"
         )
 
         # Runas equipadas
-        equipo = info.get('equipo', [])
-        runas = [e for e in equipo if 'runa' in e.get('slot', '')]
-        if runas:
+        if nombres_runas:
             lineas = '\n'.join(
-                f"Runa {i+1}: {r.get('nombre', '?')}"
-                for i, r in enumerate(runas)
+                f"R{i+1}: {nombre}"
+                for i, nombre in enumerate(nombres_runas)
             )
             self.statsRunas.text = f"RUNAS\n\n{lineas}"
         else:
