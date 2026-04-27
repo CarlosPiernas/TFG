@@ -194,7 +194,84 @@ class DatosJugador:
         self.fragmentos_arma -= FRAGMENTOS_PARA_ELEGIR
         self.armas_desbloqueadas.add(nombre)
         return nombre
+    def cargar_desde_bd(self):
+        """Carga el estado del jugador desde SQLite."""
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+        from database.repositories import recursos_repo, inventario_repo, personaje_repo, arma_repo, runa_repo
+        from database.repositories.mapa_repo import MapaRepo
 
+        # Recursos
+        r = recursos_repo.get_recursos()
+        if r:
+            self.monedas             = r.get('monedas', 0)
+            self.pociones            = r.get('pociones', 0)
+            self.transmutadores      = r.get('transmutadores', 0)
+            self.tickets_personaje   = r.get('tickets_personaje', 0)
+            self.tickets_arma        = r.get('tickets_arma', 0)
+            self.fragmentos_personaje = r.get('fragmentos_rojos', 0)
+            self.fragmentos_arma     = r.get('fragmentos_azules', 0)
+
+        # Personajes desbloqueados
+        for item in inventario_repo.get_inventario_by_tipo('personaje'):
+            datos = personaje_repo.get_by_id(item['catalogo_id'])
+            if datos:
+                self.personajes_desbloqueados.add(datos['nombre'])
+
+        # Armas desbloqueadas
+        for item in inventario_repo.get_inventario_by_tipo('arma'):
+            datos = arma_repo.get_by_id(item['catalogo_id'])
+            if datos:
+                self.armas_desbloqueadas.add(datos['nombre'])
+
+        # Runas — cada fila del inventario es 1 unidad
+        for item in inventario_repo.get_inventario_by_tipo('runa'):
+            datos = runa_repo.get_by_id(item['catalogo_id'])
+            if datos:
+                nombre = datos['nombre']
+                self.runas[nombre] = self.runas.get(nombre, 0) + 1
+
+        # Progreso del mapa
+        mapa = MapaRepo()
+        for nodo in mapa.get_todos_nodos():
+            if nodo['estado'] == 'completado':
+                self.nodos_vencidos.add(nodo['nodo_id'])
+                if nodo['nodo_id'] > self.nodo_actual:
+                    self.nodo_actual = nodo['nodo_id']
+
+        return self
+
+
+def guardar_en_bd(self):
+    """Persiste el estado del jugador en SQLite."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+    from database.db_manager import get_connection
+
+    conn = get_connection()
+    try:
+        conn.execute("""
+            UPDATE recursos_jugador SET
+                monedas            = ?,
+                pociones           = ?,
+                transmutadores     = ?,
+                tickets_personaje  = ?,
+                tickets_arma       = ?,
+                fragmentos_rojos   = ?,
+                fragmentos_azules  = ?
+            WHERE id = 1
+        """, (
+            self.monedas,
+            self.pociones,
+            self.transmutadores,
+            self.tickets_personaje,
+            self.tickets_arma,
+            self.fragmentos_personaje,
+            self.fragmentos_arma,
+        ))
+        conn.commit()
+    finally:
+        conn.close()
     # ═══════════════════════════════════
     # PROGRESO
     # ═══════════════════════════════════
