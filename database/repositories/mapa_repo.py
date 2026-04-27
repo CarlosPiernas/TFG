@@ -26,28 +26,28 @@ class MapaRepo:
         finally:
             conn.close()
 
-def completar_nodo(self, nodo_id: int, estrellas: int):
-    #Marca un nodo como completado y desbloquea el siguiente si existe.
-    #Guarda las estrellas solo si son mejores que las anteriores.
-    conn = get_connection()
-    try:
-        conn.execute("""
-            UPDATE progreso_mapa
-            SET estado = 'completado', estrellas = MAX(estrellas, ?)
-            WHERE nodo_id = ?
-        """, (estrellas, nodo_id))
-
-        #Comprobar que el siguiente nodo existe antes de intentar desbloquearlo
-        siguiente = conn.execute(
-            "SELECT nodo_id FROM progreso_mapa WHERE nodo_id = ?", (nodo_id + 1,)
-        ).fetchone()
-
-        if siguiente is not None:
+    def completar_nodo(self, nodo_id: int, estrellas: int):
+        #Marca un nodo como completado y desbloquea el siguiente si existe.
+        #Guarda las estrellas solo si son mejores que las anteriores.
+        conn = get_connection()
+        try:
             conn.execute("""
-                UPDATE progreso_mapa SET estado = 'disponible'
-                WHERE nodo_id = ? AND estado = 'bloqueado'
-            """, (nodo_id + 1,))
+                UPDATE progreso_mapa
+                SET estado = 'completado', estrellas = MAX(estrellas, ?)
+                WHERE nodo_id = ?
+            """, (estrellas, nodo_id))
 
-        conn.commit()
-    finally:
-        conn.close()
+            #Comprobar que el siguiente nodo existe antes de intentar desbloquearlo
+            siguiente = conn.execute(
+                "SELECT nodo_id FROM progreso_mapa WHERE nodo_id = ?", (nodo_id + 1,)
+            ).fetchone()
+
+            if siguiente is not None:
+                conn.execute("""
+                    UPDATE progreso_mapa SET estado = 'disponible'
+                    WHERE nodo_id = ? AND estado = 'bloqueado'
+                """, (nodo_id + 1,))
+
+            conn.commit()
+        finally:
+            conn.close()
