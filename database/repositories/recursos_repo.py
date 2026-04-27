@@ -56,17 +56,6 @@ class RecursosRepo:
             return row["monedas"] if row else 0
         finally:
             conn.close()
-            
-    def get_transmutadores(self) -> int:
-        #Devuelve los transmutadores disponibles del jugador.
-        conn = get_connection()
-        try:
-            row = conn.execute(
-                "SELECT transmutadores FROM recursos_jugador WHERE id = 1"
-            ).fetchone()
-            return row["transmutadores"] if row else 0
-        finally:
-            conn.close()
 
     def set_ultima_regen(self, timestamp: str):
         #Guarda el timestamp de la última regeneración de pociones.
@@ -76,6 +65,18 @@ class RecursosRepo:
             conn.execute(
                 "UPDATE recursos_jugador SET ultima_regen = ? WHERE id = 1",
                 (timestamp,)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+            
+    def set_faccion(self, faccion: str):
+    # Guarda la facción elegida por el jugador en la fila única de recursos
+        conn = get_connection()
+        try:
+            conn.execute(
+                "UPDATE recursos_jugador SET faccion = ? WHERE id = 1",
+                (faccion,)
             )
             conn.commit()
         finally:
@@ -127,5 +128,33 @@ class RecursosRepo:
                 (cantidad,)
             )
             conn.commit()
+        finally:
+            conn.close()
+
+    def get_transmutadores(self) -> int:
+        # Devuelve la cantidad de transmutadores del jugador
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT transmutadores FROM recursos_jugador WHERE id = 1"
+            ).fetchone()
+            return row["transmutadores"] if row else 0
+        finally:
+            conn.close()
+
+    def consumir_transmutador(self) -> bool:
+        # Consume 1 transmutador si hay. Devuelve True si se consumió, False si no había.
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT transmutadores FROM recursos_jugador WHERE id = 1"
+            ).fetchone()
+            if row is None or row["transmutadores"] <= 0:
+                return False
+            conn.execute(
+                "UPDATE recursos_jugador SET transmutadores = transmutadores - 1 WHERE id = 1"
+            )
+            conn.commit()
+            return True
         finally:
             conn.close()

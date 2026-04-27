@@ -62,3 +62,25 @@ class InventarioRepo:
             return row is not None
         finally:
             conn.close()
+    def eliminar_item(self, inv_id: int) -> bool:
+        # Elimina un ítem del inventario por su id de inventario.
+        # También borra cualquier equipamiento activo que lo referencie.
+        # Devuelve True si se eliminó, False si no existía.
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT id FROM inventario_jugador WHERE id = ?", (inv_id,)
+            ).fetchone()
+            if row is None:
+                return False
+            # Primero limpiar equipamiento_activo para no violar la FK
+            conn.execute(
+                "DELETE FROM equipamiento_activo WHERE item_inv_id = ?", (inv_id,)
+            )
+            conn.execute(
+                "DELETE FROM inventario_jugador WHERE id = ?", (inv_id,)
+            )
+            conn.commit()
+            return True
+        finally:
+            conn.close()

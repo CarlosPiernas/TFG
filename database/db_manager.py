@@ -119,6 +119,7 @@ def initialize_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recursos_jugador (
                 id                  INTEGER PRIMARY KEY CHECK (id = 1),
+                faccion             TEXT,
                 tickets_personaje   INTEGER NOT NULL DEFAULT 0,
                 tickets_arma        INTEGER NOT NULL DEFAULT 0,
                 monedas      INTEGER NOT NULL DEFAULT 0,

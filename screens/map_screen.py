@@ -8,14 +8,6 @@ from kivy.metrics import dp
 from config import FONDO_SELECCION
 from widgets.componentes import BotonRedondeado
 
-NODOS = [
-    {'nombre': 'ENTRADA',    'icono': 'I',   'jefe': False, 'enemigo': 'PLACEHOLDER'},
-    {'nombre': 'PASAJE',     'icono': 'II',  'jefe': False, 'enemigo': 'PLACEHOLDER'},
-    {'nombre': 'CRIPTA',     'icono': 'III', 'jefe': False, 'enemigo': 'PLACEHOLDER'},
-    {'nombre': 'ABISMO',     'icono': 'IV',  'jefe': False, 'enemigo': 'PLACEHOLDER'},
-    {'nombre': 'JEFE FINAL', 'icono': 'V',   'jefe': True,  'enemigo': 'PLACEHOLDER'},
-]
-
 POSICIONES = [
     (0.5,  0.13),
     (0.25, 0.30),
@@ -24,23 +16,19 @@ POSICIONES = [
     (0.5,  0.80),
 ]
 
-# Paleta modo NORMAL 
+# Paleta modo NORMAL
 NORMAL_NODO_BLOQUEADO_FONDO  = (0.08, 0.08, 0.12, 0.92)
 NORMAL_NODO_BLOQUEADO_BORDE  = (0.25, 0.25, 0.35, 1)
 NORMAL_NODO_BLOQUEADO_TEXTO  = (0.4,  0.4,  0.5,  1)
-
 NORMAL_NODO_LIBRE_FONDO      = (0.15, 0.05, 0.25, 0.95)
 NORMAL_NODO_LIBRE_BORDE      = (0.6,  0.2,  0.85, 1)
 NORMAL_NODO_LIBRE_TEXTO      = (0.8,  0.4,  1.0,  1)
-
 NORMAL_NODO_JEFE_FONDO       = (0.35, 0.08, 0.0,  0.95)
 NORMAL_NODO_JEFE_BORDE       = (0.85, 0.55, 0.0,  1)
 NORMAL_NODO_JEFE_BORDE2      = (1.0,  0.8,  0.1,  1)
 NORMAL_NODO_JEFE_TEXTO       = (1.0,  0.8,  0.1,  1)
-
 NORMAL_LINEA_SOMBRA          = (0,    0,    0,    0.7)
 NORMAL_LINEA_COLOR           = (0.45, 0.2,  0.6,  0.9)
-
 NORMAL_ETIQUETA_JEFE         = (0.9,  0.75, 0.3,  1)
 NORMAL_ETIQUETA_NODO         = (0.75, 0.75, 0.75, 1)
 
@@ -48,42 +36,36 @@ NORMAL_ETIQUETA_NODO         = (0.75, 0.75, 0.75, 1)
 HARD_NODO_BLOQUEADO_FONDO    = (0.12, 0.02, 0.02, 0.95)
 HARD_NODO_BLOQUEADO_BORDE    = (0.35, 0.08, 0.08, 1)
 HARD_NODO_BLOQUEADO_TEXTO    = (0.35, 0.1,  0.1,  1)
-
 HARD_NODO_LIBRE_FONDO        = (0.35, 0.04, 0.04, 0.95)
 HARD_NODO_LIBRE_BORDE        = (0.85, 0.15, 0.15, 1)
 HARD_NODO_LIBRE_TEXTO        = (1.0,  0.4,  0.4,  1)
-
 HARD_NODO_JEFE_FONDO         = (0.25, 0.02, 0.02, 0.98)
 HARD_NODO_JEFE_BORDE         = (0.9,  0.05, 0.05, 1)
 HARD_NODO_JEFE_BORDE2        = (1.0,  0.3,  0.0,  1)
 HARD_NODO_JEFE_TEXTO         = (1.0,  0.3,  0.1,  1)
-
 HARD_LINEA_SOMBRA            = (0.2,  0.0,  0.0,  0.8)
 HARD_LINEA_COLOR             = (0.7,  0.1,  0.1,  0.9)
-
 HARD_ETIQUETA_JEFE           = (1.0,  0.3,  0.1,  1)
 HARD_ETIQUETA_NODO           = (0.75, 0.3,  0.3,  1)
 
-# Colores del boton de dificultad
 BOTON_HARD_FONDO    = (0.55, 0.05, 0.05, 1)
 BOTON_HARD_BORDE    = (0.85, 0.15, 0.15, 1)
 BOTON_HARD_TEXTO    = (1.0,  0.85, 0.85, 1)
-
 BOTON_NORMAL_FONDO  = (0.08, 0.08, 0.15, 1)
 BOTON_NORMAL_BORDE  = (0.35, 0.35, 0.55, 1)
 BOTON_NORMAL_TEXTO  = (0.7,  0.7,  0.85, 1)
 
 
 class _NodoWidget(Widget):
-    def __init__(self, icono, jefe=False, desbloqueado=False, paleta=None,
-                 nombreJugador='NEXPAS', nombreEnemigo='PLACEHOLDER', **kwargs):
+    def __init__(self, icono, nodo_id, jefe=False, desbloqueado=False,
+                 paleta=None, gm=None, **kwargs):
         super().__init__(**kwargs)
-        self.icono          = icono
-        self.jefe           = jefe
-        self.desbloqueado   = desbloqueado
-        self.paleta         = paleta or 'normal'
-        self.nombreJugador  = nombreJugador
-        self.nombreEnemigo  = nombreEnemigo
+        self.icono        = icono
+        self.nodo_id      = nodo_id      # ID real del nodo en la BD
+        self.jefe         = jefe
+        self.desbloqueado = desbloqueado
+        self.paleta       = paleta or 'normal'
+        self.gm           = gm
         self.bind(pos=self._dibujar, size=self._dibujar)
 
     def cambiarPaleta(self, paleta):
@@ -155,14 +137,14 @@ class _NodoWidget(Widget):
         dy = touch.y - cy
 
         if dx * dx + dy * dy <= r * r:
-            if self.desbloqueado:
+            if self.desbloqueado and self.gm is not None:
+                # Registrar nodo seleccionado en GameManager
+                self.gm.nodo_seleccionado = self.nodo_id
+                # Navegar a combate
                 widget = self.parent
                 while widget and not hasattr(widget, 'manager'):
                     widget = widget.parent
-
                 if widget:
-                    pantallaCombate = widget.manager.get_screen('combate')
-                    pantallaCombate.cargarCombate(self.nombreJugador, self.nombreEnemigo)
                     widget.manager.transition = SlideTransition(direction='left')
                     widget.manager.current = 'combate'
             return True
@@ -258,14 +240,17 @@ class _BotonOvalo(Widget):
 
 
 class PantallaMapa(Screen):
-    def __init__(self, **kwargs):
+    def __init__(self, gm=None, **kwargs):
         super().__init__(**kwargs)
+        self.gm = gm
+
         with self.canvas.before:
             Color(1, 1, 1, 1)
             self._bg_rect = Rectangle(source=FONDO_SELECCION, pos=self.pos, size=self.size)
         self.bind(pos=self._actualizarFondo, size=self._actualizarFondo)
 
         raiz = FloatLayout()
+
         overlayWidget = Widget(size_hint=(1, 1))
         with overlayWidget.canvas:
             Color(0, 0, 0, 0.45)
@@ -275,11 +260,13 @@ class PantallaMapa(Screen):
             size=lambda *a: setattr(self._overlay, 'size', overlayWidget.size)
         )
         raiz.add_widget(overlayWidget)
+
         self.lineasConexion = _LineasConexion(
             POSICIONES, paleta='normal',
             size_hint=(1, 1), pos_hint={'x': 0, 'y': 0}
         )
         raiz.add_widget(self.lineasConexion)
+
         titulo = Label(
             text='— CAMPAÑA —',
             font_size=dp(22),
@@ -293,20 +280,32 @@ class PantallaMapa(Screen):
         )
         titulo.bind(size=titulo.setter('text_size'))
         raiz.add_widget(titulo)
+
         self.listaNodos     = []
         self.listaEtiquetas = []
 
-        for i, (datos, (px, py)) in enumerate(zip(NODOS, POSICIONES)):
+        # Los nodos se construyen con datos estáticos de posición/visual
+        # El estado real (bloqueado/disponible) se carga en on_pre_enter
+        NODOS_CONFIG = [
+            {'nombre': 'ENTRADA',    'icono': 'I',   'jefe': False},
+            {'nombre': 'PASAJE',     'icono': 'II',  'jefe': False},
+            {'nombre': 'CRIPTA',     'icono': 'III', 'jefe': False},
+            {'nombre': 'ABISMO',     'icono': 'IV',  'jefe': False},
+            {'nombre': 'JEFE FINAL', 'icono': 'V',   'jefe': True},
+        ]
+
+        for i, (datos, (px, py)) in enumerate(zip(NODOS_CONFIG, POSICIONES)):
             jefe = datos['jefe']
             tam  = dp(75) if jefe else dp(55)
+            nodo_id = i + 1  # nodo_id 1-based, igual que en la BD
 
             nodo = _NodoWidget(
                 icono=datos['icono'],
+                nodo_id=nodo_id,
                 jefe=jefe,
-                desbloqueado=(i == 0),
+                desbloqueado=(i == 0),  # solo el primero desbloqueado por defecto
                 paleta='normal',
-                nombreJugador='NEXPAS',        
-                nombreEnemigo=datos['enemigo'],  
+                gm=self.gm,
                 size_hint=(None, None),
                 size=(tam, tam),
                 pos_hint={'center_x': px, 'center_y': py}
@@ -328,6 +327,7 @@ class PantallaMapa(Screen):
             etiqueta.bind(size=etiqueta.setter('text_size'))
             raiz.add_widget(etiqueta)
             self.listaEtiquetas.append((etiqueta, jefe))
+
         botonVolver = BotonRedondeado(
             text='VOLVER',
             bg_color=(0.05, 0.05, 0.1, 0.9),
@@ -341,6 +341,7 @@ class PantallaMapa(Screen):
         )
         botonVolver.bind(on_press=lambda _: self.navegarA('principal'))
         raiz.add_widget(botonVolver)
+
         self.botonDificultad = _BotonOvalo(
             callback=self.cambiarDificultad,
             size_hint=(None, None),
@@ -351,14 +352,22 @@ class PantallaMapa(Screen):
 
         self.add_widget(raiz)
 
+    def on_pre_enter(self, *args):
+        # Actualiza el estado de cada nodo desde la BD
+        if self.gm is None:
+            return
+        nodos_bd = self.gm.get_mapa()
+        for i, nodo_widget in enumerate(self.listaNodos):
+            if i < len(nodos_bd):
+                estado = nodos_bd[i].get('estado', 'bloqueado')
+                nodo_widget.desbloqueado = (estado in ('disponible', 'completado'))
+                nodo_widget._dibujar()
+
     def cambiarDificultad(self, modoHard):
         paleta = 'hard' if modoHard else 'normal'
-
         for nodo in self.listaNodos:
             nodo.cambiarPaleta(paleta)
-
         self.lineasConexion.cambiarPaleta(paleta)
-
         for etiqueta, jefe in self.listaEtiquetas:
             if modoHard:
                 etiqueta.color = HARD_ETIQUETA_JEFE if jefe else HARD_ETIQUETA_NODO

@@ -35,7 +35,8 @@ from database.repositories import (
 from database.repositories.mapa_repo import MapaRepo
 from database.repositories.equipamiento_repo import EquipamientoRepo
 
-# ── Imports de logic con importlib (evita conflicto firebase-admin en Windows) ──
+# ── Imports de logic con importlib (evita conflicto firebase-admin en Windows) ─
+
 Guerrero  = importlib.import_module("logic.Clases.Guerrero").Guerrero
 Mago      = importlib.import_module("logic.Clases.Mago").Mago
 Asesino   = importlib.import_module("logic.Clases.Asesino").Asesino
@@ -59,9 +60,13 @@ class GameManager:
         self._equip_repo = EquipamientoRepo()
         self._enemy_loader = EnemyLoader()
         self._encuentro = Encuentro()
+        self.nodo_seleccionado = None  # lo setea map_screen antes de navegar a combate
         self.faccion = None
         self.personaje_activo_id = None
         self.jugador_id = 1
+         # Recuperar facción y personaje activo guardados
+        self.faccion = self._cargar_faccion()
+        self.personaje_activo_id = self._cargar_personaje_activo()
         print("[GameManager] Inicializado correctamente.")
 
     # ═══════════════════════════════════
@@ -69,10 +74,26 @@ class GameManager:
     # ═══════════════════════════════════
 
     def iniciar_juego(self, faccion: str):
-        self.faccion = faccion.lower()
-        personajes = personaje_repo.get_by_faccion(self.faccion)
+        # Si ya hay facción guardada, no permitir cambiarla
+        if self.faccion is not None:
+            print(f"[GameManager] Facción ya establecida: {self.faccion}. Ignorando.")
+            return
 
-        # Buscar personaje B Guerrero, o cualquier B
+        # Normalizar — comparamos en minúsculas sin acentos
+        faccion_lower = faccion.lower().strip()
+        if 'guardian' in faccion_lower:
+            self.faccion = 'guardian'
+        elif 'anomal' in faccion_lower:
+            self.faccion = 'anomalia'
+        else:
+            self.faccion = faccion_lower
+
+        # Persistir la facción elegida en BD
+        recursos_repo.set_faccion(self.faccion)
+
+        personajes = personaje_repo.get_by_faccion(self.faccion)
+        print(f"[DEBUG] faccion normalizada={self.faccion}, personajes encontrados={personajes}")
+
         personaje_b = None
         for p in personajes:
             if p["rareza"] == "B" and p["clase"] == "guerrero":
@@ -93,9 +114,14 @@ class GameManager:
             if item["catalogo_id"] == personaje_b["id"]:
                 self.personaje_activo_id = item["id"]
                 break
-
+        # Si por algún motivo no se asignó, intentar recuperarlo del inventario
+        if self.personaje_activo_id is None:
+            inv = inventario_repo.get_inventario_by_tipo('personaje')
+            if inv:
+                self.personaje_activo_id = inv[0]['id']
+        print(f"[DEBUG] faccion={self.faccion}, personaje_activo_id={self.personaje_activo_id}")
         print(f"[GameManager] Facción: {self.faccion}. "
-              f"Personaje inicial: {personaje_b['nombre']} (ID inv: {self.personaje_activo_id})")
+            f"Personaje inicial: {personaje_b['nombre']} (ID inv: {self.personaje_activo_id})")
 
     # ═══════════════════════════════════
     # PERSONAJE ACTIVO
@@ -307,21 +333,27 @@ class GameManager:
                             jugador.vida += bv
                             jugador.vida_max += bv
                     break
+        print(f"[DEBUG] _crear_jugador personaje_activo_id={self.personaje_activo_id}")
+        info = self.get_personaje_activo_info()
+        print(f"[DEBUG] info={info}")
         return jugador
 
     def _dar_recompensas(self, nodo_id: int) -> dict:
         import random
         _stat = importlib.import_module("logic.Clases.stat")
-        MONEDAS_POR_NODO = _stat.MONEDAS_POR_NODO
+        MONEDAS_POR_NODO    = _stat.MONEDAS_POR_NODO
         NODOS_TICKET_GRATIS = _stat.NODOS_TICKET_GRATIS
+        NODOS_DROP_RUNA     = _stat.NODOS_DROP_RUNA
+        NODOS_TRANSMUTADOR  = _stat.NODOS_TRANSMUTADOR
 
+        recompensas = {}
+
+        # Monedas
         monedas = MONEDAS_POR_NODO.get(nodo_id, 50)
-        try:
-            recursos_repo.add_recurso("monedas", monedas)
-        except Exception:
-            recursos_repo.add_recurso("moneda_premium", monedas)
-        recompensas = {"monedas": monedas}
+        recursos_repo.add_recurso("monedas", monedas)
+        recompensas["monedas"] = monedas
 
+        # Ticket gratis en nodos especiales
         if nodo_id in NODOS_TICKET_GRATIS:
             tipo_ticket = NODOS_TICKET_GRATIS[nodo_id]
             if tipo_ticket == "aleatorio":
@@ -332,6 +364,21 @@ class GameManager:
             else:
                 recursos_repo.add_recurso("tickets_arma", 1)
                 recompensas["ticket_arma"] = 1
+
+        # Runa aleatoria en nodos 4+
+        if nodo_id in NODOS_DROP_RUNA:
+            RUNAS_BASICAS = ["RUNA_ATAQUE", "RUNA_MAGIA", "RUNA_DEFENSA", "RUNA_DESTREZA"]
+            nombre_runa = random.choice(RUNAS_BASICAS)
+            runa = runa_repo.get_by_nombre(nombre_runa)
+            if runa:
+                inventario_repo.agregar_item(self.jugador_id, runa["id"], "runa")
+                recompensas["runa"] = nombre_runa
+
+        # Transmutador en nodos 5 y 10
+        if nodo_id in NODOS_TRANSMUTADOR:
+            recursos_repo.add_recurso("transmutadores", 1)
+            recompensas["transmutador"] = 1
+
         return recompensas
 
     # ═══════════════════════════════════
@@ -358,4 +405,93 @@ class GameManager:
             "armas": len(self.get_armas_jugador()),
             "mapa": self.get_mapa(),
             "firebase": self._enemy_loader.estado(),
+        }
+    def _cargar_faccion(self) -> str | None:
+        # Lee la facción guardada en BD para restaurar el estado entre sesiones
+        recursos = recursos_repo.get_recursos()
+        if recursos:
+            return recursos.get('faccion')
+        return None
+
+    def _cargar_personaje_activo(self) -> int | None:
+        if self.faccion is None:
+            return None
+        inv = inventario_repo.get_inventario_by_tipo('personaje')
+        if inv:
+            return inv[0]['id']
+        return None
+    # ═══════════════════════════════════
+    # FORJA
+    # ═══════════════════════════════════
+
+    def get_runas_basicas_jugador(self) -> list[dict]:
+        BASICAS = {'RUNA_ATAQUE', 'RUNA_MAGIA', 'RUNA_DEFENSA', 'RUNA_DESTREZA'}
+        runas = self.get_runas_jugador()
+        return [r for r in runas if r.get('nombre', '').upper() in BASICAS]
+
+    def get_transmutadores(self) -> int:
+        return recursos_repo.get_transmutadores()
+
+    def transmutar(self, nombre_runa_1: str, nombre_runa_2: str) -> dict:
+        from logic.Clases.stat import RECETAS_TRANSMUTADOR, RESULTADO_MEZCLA_INVALIDA
+
+        # Validar que el jugador tiene ambas runas en el inventario
+        inv_runas = inventario_repo.get_inventario_by_tipo('runa')
+        nombres_inventario = []
+        for item in inv_runas:
+            datos = runa_repo.get_by_id(item['catalogo_id'])
+            if datos:
+                nombres_inventario.append((item['id'], datos['nombre'].upper()))
+
+        # Buscar inv_id de cada runa
+        id_runa1 = None
+        id_runa2 = None
+        usados   = set()
+
+        for inv_id, nombre in nombres_inventario:
+            if nombre == nombre_runa_1.upper() and inv_id not in usados and id_runa1 is None:
+                id_runa1 = inv_id
+                usados.add(inv_id)
+            elif nombre == nombre_runa_2.upper() and inv_id not in usados and id_runa2 is None:
+                id_runa2 = inv_id
+                usados.add(inv_id)
+
+        if id_runa1 is None:
+            return {"ok": False, "mensaje": f"No tienes runa '{nombre_runa_1}' en el inventario."}
+        if id_runa2 is None:
+            return {"ok": False, "mensaje": f"No tienes runa '{nombre_runa_2}' en el inventario."}
+
+        if recursos_repo.get_transmutadores() <= 0:
+            return {"ok": False, "mensaje": "No tienes cargas de transmutador."}
+
+        # Calcular resultado — quitar prefijo RUNA_ para buscar en recetas
+        nombre_runa_1_clean = nombre_runa_1.upper().replace('RUNA_', '')
+        nombre_runa_2_clean = nombre_runa_2.upper().replace('RUNA_', '')
+        clave           = frozenset([nombre_runa_1_clean, nombre_runa_2_clean])
+        nombre_resultado = RECETAS_TRANSMUTADOR.get(clave, RESULTADO_MEZCLA_INVALIDA)
+
+        # Buscar la runa resultante en el catálogo con prefijo RUNA_
+        runa_resultado = runa_repo.get_by_nombre(f"RUNA_{nombre_resultado}")
+        if runa_resultado is None:
+            return {"ok": False, "mensaje": f"Runa resultado 'RUNA_{nombre_resultado}' no encontrada en el catálogo."}
+
+        # Consumir las dos runas del inventario
+        inventario_repo.eliminar_item(id_runa1)
+        inventario_repo.eliminar_item(id_runa2)
+
+        # Consumir 1 transmutador
+        recursos_repo.consumir_transmutador()
+
+        # Añadir la runa resultado al inventario
+        inventario_repo.agregar_item(self.jugador_id, runa_resultado['id'], 'runa')
+
+        es_valida = nombre_resultado != RESULTADO_MEZCLA_INVALIDA
+        return {
+            "ok":        True,
+            "es_valida": es_valida,
+            "resultado": runa_resultado,
+            "mensaje":   (
+                f"{'Transmutación exitosa' if es_valida else 'Transmutación fallida'}: "
+                f"{nombre_runa_1} + {nombre_runa_2} → RUNA_{nombre_resultado}"
+            ),
         }

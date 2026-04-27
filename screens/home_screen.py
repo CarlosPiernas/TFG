@@ -14,8 +14,9 @@ from widgets.componentes import BotonRedondeado
 
 
 class PantallaPrincipal(Screen):
-    def __init__(self, **kwargs):
+    def __init__(self, gm=None, **kwargs):
         super().__init__(**kwargs)
+        self.gm = gm  # referencia al GameManager
 
         with self.canvas.before:
             Color(1, 1, 1, 1)
@@ -28,7 +29,7 @@ class PantallaPrincipal(Screen):
             spacing=dp(8)
         )
 
-        # Barra superior con fondo oscuro semitransparente
+        # Barra superior
         barraEncabezado = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
@@ -82,8 +83,8 @@ class PantallaPrincipal(Screen):
 
         barraVida.bind(pos=actualizarBarraVida, size=actualizarBarraVida)
 
-        etiquetaMonedas = BotonRedondeado(
-            text='9999',
+        self.etiquetaMonedas = BotonRedondeado(
+            text='0',
             bg_color=(0.05, 0.05, 0.1, 0.85),
             text_color=COLOR_GUARDIANES,
             radius=8,
@@ -96,9 +97,9 @@ class PantallaPrincipal(Screen):
         barraEncabezado.add_widget(self.etiquetaFaccion)
         barraEncabezado.add_widget(barraVida)
         barraEncabezado.add_widget(Widget(size_hint=(1, 1)))
-        barraEncabezado.add_widget(etiquetaMonedas)
+        barraEncabezado.add_widget(self.etiquetaMonedas)
 
-        # Caja del personaje con borde y fondo semitransparente
+        # Caja del personaje
         cajaPersonaje = BoxLayout(
             orientation='vertical',
             size_hint=(1, 0.45),
@@ -134,15 +135,15 @@ class PantallaPrincipal(Screen):
         )
         cajaPersonaje.add_widget(self.imagenPersonaje)
 
-        # Bloques de stats con mayor opacidad
+        # Bloques de stats — ahora con referencias para actualizar
         contenedorBloques = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.35),
             spacing=dp(8)
         )
 
-        bloqueStats = BotonRedondeado(
-            text='STATS GENERALES\n\nHP: 1250\nATK: 85\nDEF: 40\nSPD: 15',
+        self.bloqueStats = BotonRedondeado(
+            text='STATS\n\nHP: —\nATK: —\nDEF: —',
             bg_color=(0.05, 0.08, 0.12, 0.95),
             text_color=COLOR_GUARDIANES,
             radius=10,
@@ -152,7 +153,7 @@ class PantallaPrincipal(Screen):
             valign='top',
             padding=(dp(15), dp(15))
         )
-        bloqueStats.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
+        self.bloqueStats.bind(size=lambda instance, value: setattr(instance, 'text_size', value))
 
         bloqueRunas = BoxLayout(orientation='vertical', size_hint=(0.6, 1), spacing=dp(5))
 
@@ -166,8 +167,8 @@ class PantallaPrincipal(Screen):
             )
             filaSlots.add_widget(slotRuna)
 
-        statsRunas = BotonRedondeado(
-            text='STATS RUNAS\n\nATK - 32\nDEF - 5\nSPD - 40',
+        self.statsRunas = BotonRedondeado(
+            text='RUNAS\n\n—',
             bg_color=(0.05, 0.08, 0.12, 0.95),
             text_color=COLOR_ANOMALIAS,
             radius=10,
@@ -176,8 +177,8 @@ class PantallaPrincipal(Screen):
         )
 
         bloqueRunas.add_widget(filaSlots)
-        bloqueRunas.add_widget(statsRunas)
-        contenedorBloques.add_widget(bloqueStats)
+        bloqueRunas.add_widget(self.statsRunas)
+        contenedorBloques.add_widget(self.bloqueStats)
         contenedorBloques.add_widget(bloqueRunas)
 
         # Barra de navegación
@@ -222,7 +223,7 @@ class PantallaPrincipal(Screen):
         )
         botonCampana.bind(on_press=lambda _: self.navegarA('mapa'))
 
-        botonVolverSeleccion = BotonRedondeado(
+        botonInventario = BotonRedondeado(
             text='INV',
             bg_color=PANEL_MEDIO,
             text_color=BLANCO,
@@ -231,11 +232,11 @@ class PantallaPrincipal(Screen):
             width=dp(55),
             font_size=dp(13)
         )
-        botonVolverSeleccion.bind(on_press=lambda _: self.navegarA('inventario'))
+        botonInventario.bind(on_press=lambda _: self.navegarA('inventario'))
 
         barraNavegacion.add_widget(botonGacha)
         barraNavegacion.add_widget(botonCampana)
-        barraNavegacion.add_widget(botonVolverSeleccion)
+        barraNavegacion.add_widget(botonInventario)
 
         contenedorPrincipal.add_widget(barraEncabezado)
         contenedorPrincipal.add_widget(cajaPersonaje)
@@ -243,6 +244,60 @@ class PantallaPrincipal(Screen):
         contenedorPrincipal.add_widget(barraNavegacion)
 
         self.add_widget(contenedorPrincipal)
+
+    def on_pre_enter(self, *args):
+        # Se llama cada vez que esta pantalla va a mostrarse — recarga datos reales
+        self.refrescarDatos()
+
+    def refrescarDatos(self):
+        if self.gm is None:
+            return
+        info = self.gm.get_personaje_activo_info()
+        if info is None:
+            return
+
+        # Fondo y nombre de facción
+        faccion = self.gm.faccion or ''
+        if faccion == 'anomalia':
+            self._bg_rect.source = FONDO_ANOMALIAS
+            self.etiquetaFaccion.text  = NOMBRE_ANOMALIA
+            self.etiquetaFaccion.color = COLOR_ANOMALIAS
+        else:
+            self._bg_rect.source = FONDO_GUARDIANES
+            self.etiquetaFaccion.text  = 'Guardianes'
+            self.etiquetaFaccion.color = COLOR_GUARDIANES
+        self._bg_rect.source = self._bg_rect.source  # fuerza reload
+
+        # Sprite del personaje
+        sprite = info.get('sprite', '') or ''
+        self.imagenPersonaje.source = sprite
+        if sprite:
+            self.imagenPersonaje.reload()
+
+        # Stats base
+        self.bloqueStats.text = (
+            f"STATS\n\n"
+            f"HP:  {info.get('pv_base', '—')}\n"
+            f"ATK: {info.get('atk_base', '—')}\n"
+            f"DEF: {info.get('defensa_base', '—')}"
+        )
+
+        # Runas equipadas
+        equipo = info.get('equipo', [])
+        runas = [e for e in equipo if 'runa' in e.get('slot', '')]
+        if runas:
+            lineas = '\n'.join(
+                f"Runa {i+1}: {r.get('nombre', '?')}"
+                for i, r in enumerate(runas)
+            )
+            self.statsRunas.text = f"RUNAS\n\n{lineas}"
+        else:
+            self.statsRunas.text = 'RUNAS\n\n—'
+
+        # Monedas
+        recursos = self.gm.get_recursos()
+        monedas = recursos.get('monedas', recursos.get('moneda_premium', 0))
+        self.etiquetaMonedas.text = str(monedas)
 
     def _actualizarCajaPersonaje(self, instance, value):
         self._cajaRect.pos  = instance.pos
@@ -254,6 +309,7 @@ class PantallaPrincipal(Screen):
         )
 
     def cargarPersonaje(self, nombreFaccion, rutaSprite, colorAcento):
+        # Mantenido por compatibilidad con faction_screen
         self.imagenPersonaje.source = rutaSprite
         self.imagenPersonaje.reload()
         self.etiquetaFaccion.text  = nombreFaccion
