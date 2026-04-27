@@ -76,9 +76,8 @@ def initialize_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS inventario_jugador (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                tipo        TEXT    NOT NULL,   -- 'personaje' | 'arma' | 'runa'
-                catalogo_id INTEGER NOT NULL,    -- FK al catálogo correspondiente
-                UNIQUE (tipo, catalogo_id)      -- evita duplicados en inserciones concurrentes
+                tipo        TEXT    NOT NULL,
+                catalogo_id INTEGER NOT NULL
             )
         """)
 
