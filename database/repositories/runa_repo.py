@@ -34,3 +34,14 @@ class RunaRepo:
             return [dict(r) for r in rows]
         finally:
             conn.close()
+            
+    def get_by_nombre(self, nombre: str) -> dict | None:
+        # Busca una runa en el catálogo por nombre exacto
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT * FROM runas_catalogo WHERE nombre = ?", (nombre,)
+            ).fetchone()
+            return dict(row) if row else None
+        finally:
+            conn.close()
