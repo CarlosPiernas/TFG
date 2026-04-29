@@ -4,6 +4,10 @@ from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
 from kivy.core.window import Window
 from kivy.utils import platform
+from kivy.config import Config
+Config.set('graphics', 'texture_min_filter', 'linear')
+Config.set('graphics', 'texture_mag_filter', 'linear')
+
 
 if platform not in ('android', 'ios'):
     Window.size = (400, 800)
