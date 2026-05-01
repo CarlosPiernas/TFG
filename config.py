@@ -15,6 +15,9 @@ BLANCO           = hex_to_kivy('#ffffff')
 GRIS             = hex_to_kivy('#808080')
 COLOR_CAMPAÑA    = hex_to_kivy('#009aa6')
 COLOR_VIDA       = hex_to_kivy('#00cc33')
+COLOR_VIDA_MEDIA = hex_to_kivy('#ff9900')
+COLOR_VIDA_BAJA  = hex_to_kivy('#cc2222')
+COLOR_STATS      = hex_to_kivy('#5fffa8')   # verde menta brillante para stats de equipo
 
 # Moneda e iconos de navegación
 ICONO_MONEDA     = 'assets/logos/Moneda.png'
@@ -40,6 +43,25 @@ PLACEHOLDER = 'assets/test.png'
 # Logos
 LOGO_ANOMALIA = 'assets/logos/Logo_Anomalias.png'
 LOGO_GUARDIAN = 'assets/logos/Logo_Guardianes.png'
+
+# Marco decorativo de la barra de vida (común para ambas facciones)
+MARCO_VIDA    = 'assets/logos/MarcoVida.png'
+
+# ── Forja: fondos por facción y slots de runas ──────────────────────────────
+FONDO_FORJA_GUARDIAN = 'assets/fondos/Forja_Guar_Pulida.jpg'
+FONDO_FORJA_ANOMALIA = 'assets/fondos/ForjaVacioPulida.jpg'
+
+SLOT_RUNA_GUARDIAN   = 'assets/logos/SlotRunaGuardian-sinFondo.png'
+SLOT_RUNA_ANOMALIA   = 'assets/logos/SoltRunaVacio-sinFondo.png'
+SLOT_RUNA_RESULTADO  = 'assets/logos/SlotResultadoRuna.png'
+
+# Forja: iconos de botones y cargas
+ICONO_FORJAR              = 'assets/logos/IconoForjar.png'
+MARCO_BOTON               = 'assets/logos/Boton.png'
+BOTON_FORJAR              = 'assets/logos/BotonForjar.png'
+ICONO_TRANSMUTADOR        = 'assets/logos/CargaTransmutacion.png'
+FLECHA_TRANSMUTAR_GUARDIAN = 'assets/logos/FlechaTransmutar.png'
+FLECHA_TRANSMUTAR_ANOMALIA = 'assets/logos/FlechaTransmutarAnomalia.png'
 
 # Sprites personajes
 SPRITE_ANOMALIA = 'assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png'
