@@ -6,13 +6,13 @@ from database.db_manager import get_connection
 #(nombre, faccion, clase, rareza, atk_base, defensa_base, magia_base, pv_base, destreza_base, sprite_id)
 #Stats por clase y rareza según tabla 1.1 del GDD
 PERSONAJES = [
-    #Guardianes — B: Guerrero + Mago | A: Guerrero + Asesino | S: Asesino + Mago
+    #Guardianes — B: Guerrero + Mago | A: Guerrero + Mago | S: Asesino + Mago
     ("Guardian_Guerrero_B",  "guardian", "guerrero", "B", 130, 100, 0,   600, 0,   None),
     ("Guardian_Mago_B",      "guardian", "mago",     "B", 50,  80,  100, 400, 0,   None),
     ("Guardian_Guerrero_A",  "guardian", "guerrero", "A", 156, 120, 0,   720, 0,   None),
-    ("Guardian_Asesino_A",   "guardian", "asesino",  "A", 132, 108, 0,   600, 60,  None),
-    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 165, 0,   920, 90,  "assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png"),
-    ("Guardian_Mago_S",      "guardian", "mago",     "S", 90,  200, 185, 750, 0,   None),
+    ("Guardian_Mago_A",   "guardian", "mago",  "A", 60, 96, 120,   480, 0,  None),
+    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 165, 0,   920, 90, None),
+    ("Guardian_Mago_S",      "guardian", "mago",     "S", 90,  200, 185, 750, 0, "assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png"),
     #Anomalías — B: Guerrero + Asesino | A: Asesino + Mago | S: Guerrero + Mago
     ("Anomalia_Guerrero_B",  "anomalia", "guerrero", "B", 130, 100, 0,   600, 0,   None),
     ("Anomalia_Asesino_B",   "anomalia", "asesino",  "B", 110, 90,  0,   500, 50,  None),

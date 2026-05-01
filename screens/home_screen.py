@@ -406,7 +406,13 @@ class PantallaPrincipal(Screen):
             self._fondoRunaRect.source = FONDO_RUNA_GUARDIAN
         self.logoFaccion.reload()
 
-        sprite = info.get('sprite_id', '') or PLACEHOLDER
+        from database.repositories.personaje_repo import get_sprite_path
+        sprite = get_sprite_path(
+            info.get('faccion', ''),
+            info.get('clase', ''),
+            info.get('rareza', ''),
+            'splash'  # home muestra el splash art
+        )
         self.imagenPersonaje.source = sprite
         self.imagenPersonaje.reload()
 
@@ -483,7 +489,10 @@ class PantallaPrincipal(Screen):
         self.logoFaccion.reload()
 
     def navegarA(self, pantalla):
-        self.manager.transition = SlideTransition(direction='left')
+        if pantalla == 'gacha':
+            self.manager.transition = SlideTransition(direction='right')
+        else:
+            self.manager.transition = SlideTransition(direction='left')
         self.manager.current = pantalla
 
     def actualizarFondo(self, *args):
