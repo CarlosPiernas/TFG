@@ -17,6 +17,7 @@ from config import (
     ICONO_FORJAR, MARCO_BOTON, BOTON_FORJAR,
     ICONO_TRANSMUTADOR,
     FLECHA_TRANSMUTAR_GUARDIAN, FLECHA_TRANSMUTAR_ANOMALIA,
+    CABECERA_FORJA,
     PLACEHOLDER
 )
 from widgets.componentes import BotonRedondeado
@@ -147,74 +148,78 @@ class PantallaForja(Screen):
         raiz = BoxLayout(orientation='vertical', spacing=0)
 
         # ══════════════════════════════════════════════════════════════════
-        # CABECERA (12%) — Título "FORJA"
+        # CABECERA (18%) — Imagen con la palabra "FORJA" integrada
         # ══════════════════════════════════════════════════════════════════
-        cabecera = BoxLayout(
-            orientation='horizontal',
-            size_hint=(1, 0.12),
-            padding=[dp(8), dp(8)]
-        )
-        with cabecera.canvas.before:
-            Color(0, 0, 0, 0.55)
-            self._cabRect = Rectangle(pos=cabecera.pos, size=cabecera.size)
-        cabecera.bind(
-            pos=lambda *a: setattr(self._cabRect, 'pos', cabecera.pos),
-            size=lambda *a: setattr(self._cabRect, 'size', cabecera.size)
+        cabecera = Image(
+            source=CABECERA_FORJA,
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            size_hint=(1, 0.18)
         )
 
-        lblTitulo = Label(
-            text='— FORJA —',
-            font_size=dp(22),
-            bold=True,
-            color=COLOR_GUARDIANES,
-            halign='center',
-            valign='middle'
-        )
-        lblTitulo.bind(size=lblTitulo.setter('text_size'))
-        cabecera.add_widget(lblTitulo)
-
         # ══════════════════════════════════════════════════════════════════
-        # CONTADOR DE TRANSMUTADORES (8%) — "Transmutadores: N" + icono
+        # CONTADOR DE TRANSMUTADORES (8%) — pastilla compacta con [icono] : [N]
         # ══════════════════════════════════════════════════════════════════
         filaContador = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.08),
-            padding=[dp(20), dp(4)],
-            spacing=dp(8)
+            padding=[dp(8), dp(4)]
         )
+        # Empuje izquierdo y derecho para centrar la cerda
         filaContador.add_widget(Widget(size_hint=(1, 1)))
 
-        self.etiquetaTransmutadores = Label(
-            text='Transmutadores: 0',
-            font_size=dp(14),
-            bold=True,
-            color=BLANCO,
-            halign='right',
-            valign='middle',
+        # La "cerda": pastilla redondeada oscura con icono + ":" + número
+        cerdaContador = BoxLayout(
+            orientation='horizontal',
             size_hint=(None, 1),
-            width=dp(180)
+            width=dp(110),
+            spacing=dp(4),
+            padding=[dp(10), dp(4)]
         )
-        self.etiquetaTransmutadores.bind(size=self.etiquetaTransmutadores.setter('text_size'))
-        filaContador.add_widget(self.etiquetaTransmutadores)
+        with cerdaContador.canvas.before:
+            Color(0, 0, 0, 0.7)
+            self._cerdaRect = RoundedRectangle(
+                pos=cerdaContador.pos,
+                size=cerdaContador.size,
+                radius=[dp(14)]
+            )
+        cerdaContador.bind(
+            pos=lambda *a: setattr(self._cerdaRect, 'pos', cerdaContador.pos),
+            size=lambda *a: setattr(self._cerdaRect, 'size', cerdaContador.size)
+        )
 
         self.iconoTransmutador = Image(
             source=ICONO_TRANSMUTADOR,
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(None, 1),
-            width=dp(32),
+            width=dp(28),
             mipmap=True
         )
-        filaContador.add_widget(self.iconoTransmutador)
+        cerdaContador.add_widget(self.iconoTransmutador)
 
+        self.etiquetaTransmutadores = Label(
+            text=': 0',
+            font_size=dp(15),
+            bold=True,
+            color=BLANCO,
+            halign='left',
+            valign='middle',
+            size_hint=(1, 1)
+        )
+        self.etiquetaTransmutadores.bind(size=self.etiquetaTransmutadores.setter('text_size'))
+        cerdaContador.add_widget(self.etiquetaTransmutadores)
+
+        filaContador.add_widget(cerdaContador)
         filaContador.add_widget(Widget(size_hint=(1, 1)))
 
         # ══════════════════════════════════════════════════════════════════
-        # ZONA DE FUSIÓN (50%) — Runa1+Runa2 (izq) → Resultado (der)
+        # ZONA DE FUSIÓN (44%) — Runa1+Runa2 (izq) → Resultado (der)
         # ══════════════════════════════════════════════════════════════════
         zonaFusion = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, 0.50),
+            size_hint=(1, 0.44),
             padding=[dp(12), dp(8)],
             spacing=dp(4)
         )
@@ -222,7 +227,7 @@ class PantallaForja(Screen):
         # Columna izquierda: dos slots de entrada apilados
         columnaEntradas = BoxLayout(
             orientation='vertical',
-            size_hint=(0.35, 1),
+            size_hint=(0.32, 1),
             spacing=dp(12),
             padding=[dp(8), dp(8)]
         )
@@ -238,7 +243,7 @@ class PantallaForja(Screen):
         # Columna central: flecha decorativa (PNG, cambia según facción)
         columnaFlecha = BoxLayout(
             orientation='vertical',
-            size_hint=(0.30, 1),
+            size_hint=(0.36, 1),
             padding=[dp(2), dp(8)]
         )
         self.imgFlecha = Image(
@@ -253,7 +258,7 @@ class PantallaForja(Screen):
         # Columna derecha: slot resultado (más pequeño, centrado verticalmente)
         columnaResultado = BoxLayout(
             orientation='vertical',
-            size_hint=(0.35, 1),
+            size_hint=(0.32, 1),
             padding=[dp(8), dp(8)]
         )
         columnaResultado.add_widget(Widget(size_hint=(1, 0.20)))
@@ -334,7 +339,7 @@ class PantallaForja(Screen):
         botonera.add_widget(botonForjar)
 
         # ══════════════════════════════════════════════════════════════════
-        # MONTAJE FINAL: cabecera (12) + contador (8) + fusión (50) +
+        # MONTAJE FINAL: cabecera (18) + contador (8) + fusión (44) +
         #                inventario (15) + botonera (15) = 100%
         # ══════════════════════════════════════════════════════════════════
         raiz.add_widget(cabecera)
@@ -374,7 +379,7 @@ class PantallaForja(Screen):
         if self.gm is None:
             return
         n = self.gm.get_transmutadores()
-        self.etiquetaTransmutadores.text = f'Transmutadores: {n}'
+        self.etiquetaTransmutadores.text = f': {n}'
 
     def _cargarRunasDisponibles(self):
         self.filaRunas.clear_widgets()

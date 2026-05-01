@@ -62,6 +62,7 @@ BOTON_FORJAR              = 'assets/logos/BotonForjar.png'
 ICONO_TRANSMUTADOR        = 'assets/logos/CargaTransmutacion.png'
 FLECHA_TRANSMUTAR_GUARDIAN = 'assets/logos/FlechaTransmutar.png'
 FLECHA_TRANSMUTAR_ANOMALIA = 'assets/logos/FlechaTransmutarAnomalia.png'
+CABECERA_FORJA            = 'assets/fondos/CabeceraForja.jpg'
 
 # Sprites personajes
 SPRITE_ANOMALIA = 'assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png'
