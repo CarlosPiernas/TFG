@@ -64,6 +64,13 @@ FLECHA_TRANSMUTAR_GUARDIAN = 'assets/logos/FlechaTransmutar.png'
 FLECHA_TRANSMUTAR_ANOMALIA = 'assets/logos/FlechaTransmutarAnomalia.png'
 CABECERA_FORJA            = 'assets/fondos/CabeceraForja.jpg'
 
+# Inventario: cabecera y botones de pestañas
+CABECERA_INVENTARIO       = 'assets/fondos/CabeceraInventario.jpg'
+BOTON_PERSONAJES          = 'assets/logos/BotonPersonajes.png'
+BOTON_ARMAS               = 'assets/logos/BotonArmas.png'
+BOTON_RUNAS               = 'assets/logos/BotonRunas.png'
+BOTON_OBJETOS             = 'assets/logos/BotonObjetos.png'
+
 # Sprites personajes
 SPRITE_ANOMALIA = 'assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png'
 SPRITE_GUARDIAN = 'assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png'
