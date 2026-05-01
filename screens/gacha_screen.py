@@ -1,148 +1,335 @@
-# =============================================================================
-# screens/gacha_screen.py
-# =============================================================================
-
-from kivy.uix.screenmanager import Screen
+from kivy.uix.screenmanager import Screen, SlideTransition
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.uix.modalview import ModalView
-from kivy.uix.screenmanager import Screen, SlideTransition
+from kivy.graphics import Color, RoundedRectangle, Rectangle
 from kivy.metrics import dp
+from kivy.clock import Clock
+import os
 
-from widgets.componentes import PanelRedondeado, BotonRedondeado
+from widgets.componentes import BotonRedondeado
 from config import (
-    PANEL_OSCURO, PANEL_MEDIO, COLOR_GUARDIANES,
-    BLANCO, FONDO_PRINCIPAL, NOMBRE_ANOMALIA, FONDO_GACHA
+    PANEL_OSCURO, PANEL_MEDIO, COLOR_GUARDIANES, BLANCO, FONDO_PRINCIPAL,
+    NOMBRE_ANOMALIA,
+    FONDO_GACHA_ARMAS, FONDO_GACHA_ANOMALIA, FONDO_GACHA_GUARDIANES,
+    TITULO_GACHA, TITULO_PERSONAJES, TITULO_ARMAS,
+    BOTON_INVOCAR, BOTON_FORJAR, BOTON_TIENDA, BOTON_VOLVER,
+    TICKET_PERSONAJES, TICKET_ARMAS
 )
 
-# Color por rareza para el popup
 COLOR_RAREZA = {
-    'S': (1.0, 0.75, 0.0, 1),   # dorado
-    'A': (0.6, 0.2,  1.0, 1),   # púrpura
-    'B': (0.4, 0.7,  1.0, 1),   # azul
+    'S': (1.0, 0.75, 0.0, 1),
+    'A': (0.6, 0.2,  1.0, 1),
+    'B': (0.4, 0.7,  1.0, 1),
 }
 
 
 class PantallaGacha(Screen):
     def __init__(self, gm=None, **kwargs):
         super().__init__(**kwargs)
-        self.gm             = gm
-        self.banner_actual  = 'personajes'  # banner seleccionado actualmente
+        self.gm            = gm
+        self.banner_actual = 'personajes'
 
-        self.layout_principal = FloatLayout()
+        raiz = FloatLayout()
 
-        # 1. FONDO
-        self.layout_principal.add_widget(Image(
-            source=FONDO_GACHA,
+        # ── FONDO ─────────────────────────────────────────────────────────────
+        self.fondo = Image(
+            source=FONDO_GACHA_ANOMALIA,
             allow_stretch=True,
             keep_ratio=False,
             size_hint=(1, 1),
-            pos_hint={'x': 0, 'y': 0}
+            pos_hint={'x': 0, 'y': 0},
+            mipmap=True
+        )
+        raiz.add_widget(self.fondo)
+
+        self._frames_armas = sorted(
+            [f'assets/fondos/fondo_gacha_armas/{f}' 
+             for f in os.listdir('assets/fondos/fondo_gacha_armas')
+             if f.endswith('.png')],
+            key=lambda x: int(x.split('_')[-1].replace('.png', ''))
+        )
+        self._frames_personajes = sorted(
+            [f'assets/fondos/fondo_gacha_anomalia/{f}' 
+             for f in os.listdir('assets/fondos/fondo_gacha_anomalia')
+             if f.endswith('.png')],
+            key=lambda x: int(x.split('_')[-1].replace('.png', ''))
+        )
+        self._frames_guardianes = sorted(
+            [f'assets/fondos/fondo_gacha_guardianes/{f}' 
+             for f in os.listdir('assets/fondos/fondo_gacha_guardianes')
+             if f.endswith('.png')],
+            key=lambda x: int(x.split('_')[-1].replace('.png', ''))
+        )
+        self._frame_actual      = 0
+        self._anim_event        = None
+
+        # ── TÍTULO GACHAPÓN ───────────────────────────────────────────────────
+        raiz.add_widget(Image(
+            source=TITULO_GACHA,
+            size_hint=(0.95, 0.18),
+            pos_hint={'center_x': 0.5, 'top': 1.0},
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True
         ))
 
-        # 2. RECURSOS — tickets arriba a la derecha
-        self.label_tickets = Label(
-            text='Tickets: —',
-            font_size='18sp',
-            size_hint=(None, None),
-            size=(dp(160), dp(50)),
-            pos_hint={'right': 0.95, 'top': 0.98}
+        # ── FONDO OSCURO TABS + TICKETS ───────────────────────────────────────
+        fondoTabs = BoxLayout(
+            size_hint=(1, 0.16),
+            pos_hint={'x': 0, 'top': 0.84}
         )
-        self.layout_principal.add_widget(self.label_tickets)
+        with fondoTabs.canvas.before:
+            Color(0, 0, 0, 0.55)
+            self._bgTabs = Rectangle(
+                pos=fondoTabs.pos,
+                size=fondoTabs.size
+            )
+        fondoTabs.bind(
+            pos=lambda *a: setattr(self._bgTabs, 'pos', fondoTabs.pos),
+            size=lambda *a: setattr(self._bgTabs, 'size', fondoTabs.size)
+        )
+        raiz.add_widget(fondoTabs)
 
-        # 3. SELECTOR DE BANNERS
-        self.selector = BoxLayout(
+        # ── TABS BANNERS ──────────────────────────────────────────────────────
+        tabs = BoxLayout(
             orientation='horizontal',
-            size_hint=(0.9, 0.07),
-            pos_hint={'center_x': 0.5, 'top': 0.90},
+            size_hint=(0.9, 0.10),
+            pos_hint={'center_x': 0.5, 'top': 0.84},
+            spacing=dp(8)
+        )
+
+        self.btn_personajes = Button(
+            background_normal=TITULO_PERSONAJES,
+            background_down=TITULO_PERSONAJES,
+            background_color=(1, 1, 1, 1),
+            border=(0, 0, 0, 0),
+            size_hint=(1, 1),
+            mipmap=True
+        )
+        self.btn_personajes.bind(on_press=lambda _: self.cambiar_banner('personajes'))
+
+        self.btn_armas_tab = Button(
+            background_normal=TITULO_ARMAS,
+            background_down=TITULO_ARMAS,
+            background_color=(1, 1, 1, 0.5),
+            border=(0, 0, 0, 0),
+            size_hint=(1, 1),
+            mipmap=True
+        )
+        self.btn_armas_tab.bind(on_press=lambda _: self.cambiar_banner('armas'))
+
+        tabs.add_widget(self.btn_personajes)
+        tabs.add_widget(self.btn_armas_tab)
+        raiz.add_widget(tabs)
+
+        # ── FILA TICKETS — ancho completo con fondo oscuro ────────────────────
+        filaTickets = BoxLayout(
+            orientation='horizontal',
+            size_hint=(0.9, 0.06),
+            pos_hint={'center_x': 0.5, 'top': 0.75},
+            spacing=dp(0),
+            padding=[dp(10), dp(4)]
+        )
+
+        # Lado personajes
+        ladoPersonajes = BoxLayout(orientation='horizontal', size_hint=(0.5, 1), spacing=dp(4))
+        self.iconoTicketPersonajes = Image(
+            source=TICKET_PERSONAJES,
+            size_hint=(None, None),
+            size=(dp(28), dp(28)),
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            pos_hint={'center_y': 0.5}
+        )
+        self.lblTicketsPersonajes = Label(
+            text='0',
+            font_size=dp(13),
+            bold=True,
+            color=COLOR_GUARDIANES,
+            size_hint=(1, 1),
+            halign='left',
+            valign='middle'
+        )
+        self.lblTicketsPersonajes.bind(size=self.lblTicketsPersonajes.setter('text_size'))
+        ladoPersonajes.add_widget(self.iconoTicketPersonajes)
+        ladoPersonajes.add_widget(self.lblTicketsPersonajes)
+
+        # Separador vertical
+        separador = BoxLayout(size_hint=(None, 1), width=dp(1))
+        with separador.canvas:
+            Color(1, 1, 1, 0.3)
+            Rectangle(pos=separador.pos, size=separador.size)
+        separador.bind(
+            pos=lambda *a: None,
+            size=lambda *a: None
+        )
+
+        # Lado armas
+        ladoArmas = BoxLayout(orientation='horizontal', size_hint=(0.5, 1), spacing=dp(4),
+                              padding=[dp(8), 0])
+        self.iconoTicketArmas = Image(
+            source=TICKET_ARMAS,
+            size_hint=(None, None),
+            size=(dp(28), dp(28)),
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            pos_hint={'center_y': 0.5}
+        )
+        self.lblTicketsArmas = Label(
+            text='0',
+            font_size=dp(13),
+            bold=True,
+            color=COLOR_GUARDIANES,
+            size_hint=(1, 1),
+            halign='left',
+            valign='middle'
+        )
+        self.lblTicketsArmas.bind(size=self.lblTicketsArmas.setter('text_size'))
+        ladoArmas.add_widget(self.iconoTicketArmas)
+        ladoArmas.add_widget(self.lblTicketsArmas)
+
+        filaTickets.add_widget(ladoPersonajes)
+        filaTickets.add_widget(separador)
+        filaTickets.add_widget(ladoArmas)
+        raiz.add_widget(filaTickets)
+
+        # ── PITY ──────────────────────────────────────────────────────────────
+        self.lblPity = Label(
+            text='Próximo [b]S[/b] en: [color=#ffbf00]—[/color]',
+            markup=True,
+            font_size=dp(12),
+            color=BLANCO,
+            size_hint=(0.6, 0.05),
+            pos_hint={'center_x': 0.5, 'y': 0.30},
+            halign='center',
+            valign='middle'
+        )
+        self.lblPity.bind(size=self.lblPity.setter('text_size'))
+        raiz.add_widget(self.lblPity)
+
+        # ── BOTÓN INVOCAR/FORJAR ──────────────────────────────────────────────
+        self.btnAccion = Button(
+            background_normal=BOTON_INVOCAR,
+            background_down=BOTON_INVOCAR,
+            background_color=(1, 1, 1, 1),
+            border=(0, 0, 0, 0),
+            size_hint=(0.65, 0.11),
+            pos_hint={'center_x': 0.5, 'y': 0.17},
+            mipmap=True
+        )
+        self.btnAccion.bind(on_press=self.ejecutar_tirada)
+        raiz.add_widget(self.btnAccion)
+
+        # ── FILA TIENDA + VOLVER ──────────────────────────────────────────────
+        filaBotones = BoxLayout(
+            orientation='horizontal',
+            size_hint=(0.85, 0.11),
+            pos_hint={'center_x': 0.5, 'y': 0.04},
             spacing=dp(10)
         )
-        self.btn_heroes = BotonRedondeado(
-            text='PERSONAJES',
-            bg_color=PANEL_MEDIO,
-            on_release=lambda x: self.cambiar_banner('personajes')
-        )
-        self.btn_armas = BotonRedondeado(
-            text='ARMAS',
-            bg_color=PANEL_OSCURO,
-            on_release=lambda x: self.cambiar_banner('armas')
-        )
-        self.selector.add_widget(self.btn_heroes)
-        self.selector.add_widget(self.btn_armas)
-        self.layout_principal.add_widget(self.selector)
 
-        # 4. ARTE DEL BANNER
-        self.banner_visual = Image(
-            source='assets/logos/Logo_Anomalias.png',
-            size_hint=(0.9, 0.40),
-            pos_hint={'center_x': 0.5, 'center_y': 0.55},
-            allow_stretch=True
+        btnTienda = Button(
+            background_normal=BOTON_TIENDA,
+            background_down=BOTON_TIENDA,
+            background_color=(1, 1, 1, 1),
+            border=(0, 0, 0, 0),
+            size_hint=(1, 1),
+            mipmap=True
         )
-        self.layout_principal.add_widget(self.banner_visual)
+        btnTienda.bind(on_press=lambda _: self.navegarA('tienda'))
 
-        # 5. CONTADOR DE PITY
-        self.pity_container = FloatLayout(
-            size_hint=(0.8, 0.06),
-            pos_hint={'center_x': 0.5, 'y': 0.30}
+        btnVolver = Button(
+            text='VOLVER',
+            background_normal=BOTON_VOLVER,
+            background_down=BOTON_VOLVER,
+            background_color=(1, 1, 1, 1),
+            color=BLANCO,
+            bold=True,
+            font_size=dp(13),
+            border=(0, 0, 0, 0),
+            size_hint=(1, 1),
+            mipmap=True
         )
-        self.pity_container.add_widget(PanelRedondeado(bg_color=PANEL_OSCURO, radius=15))
-        self.label_pity = Label(
-            text='Próximo [b]Grado S[/b] en: [color=#ffbf00]—[/color]',
-            markup=True,
-            pos_hint={'center_x': 0.5, 'center_y': 0.5}
-        )
-        self.pity_container.add_widget(self.label_pity)
-        self.layout_principal.add_widget(self.pity_container)
+        btnVolver.bind(on_press=self.ir_al_home)
 
-        # 6. BOTON INVOCAR
-        self.btn_invocar = BotonRedondeado(
-            text='INVOCAR x1',
-            size_hint=(0.7, 0.1),
-            pos_hint={'center_x': 0.5, 'y': 0.15},
-            bg_color=COLOR_GUARDIANES,
-            text_color=FONDO_PRINCIPAL,
-            radius=20,
-            on_release=self.ejecutar_tirada
-        )
-        self.layout_principal.add_widget(self.btn_invocar)
+        filaBotones.add_widget(btnTienda)
+        filaBotones.add_widget(btnVolver)
+        raiz.add_widget(filaBotones)
 
-        # 7. BOTON VOLVER
-        self.btn_volver = BotonRedondeado(
-            text='MENU',
-            size_hint=(0.7, 0.07),
-            pos_hint={'center_x': 0.5, 'y': 0.05},
-            bg_color=PANEL_OSCURO,
-            on_release=self.ir_al_home
-        )
-        self.layout_principal.add_widget(self.btn_volver)
+        self.add_widget(raiz)
 
-        self.add_widget(self.layout_principal)
+    def _iniciar_animacion(self):
+        if self._anim_event:
+            self._anim_event.cancel()
+        self._frame_actual = 0
+        self._anim_event = Clock.schedule_interval(self._siguiente_frame, 1/12)
+
+    def _siguiente_frame(self, dt):
+        if self.banner_actual == 'armas':
+            frames = self._frames_armas
+        elif self.gm and self.gm.faccion == 'anomalia':
+            frames = self._frames_personajes
+        else:
+            frames = self._frames_guardianes
+
+        if not frames:
+            return
+        self._frame_actual = (self._frame_actual + 1) % len(frames)
+        self.fondo.source = frames[self._frame_actual]
+
+    # ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     def on_pre_enter(self, *args):
-        # Nombre del banner de personajes según facción
-        if self.gm and self.gm.faccion:
-            if self.gm.faccion == 'anomalia':
-                self.btn_heroes.text = 'ANOMALÍAS'
-            else:
-                self.btn_heroes.text = 'GUARDIANES'
-
-        # Actualizar tickets y pity
+        self._refrescar_fondo()
         self._refrescar_recursos()
         self._refrescar_pity()
+        self._precargar_frames()
+        self._iniciar_animacion()
+    
+    def _precargar_frames(self):
+        import threading
+        from kivy.core.image import Image as CoreImage
 
-    # ── Helpers de refresco ──────────────────────────────────
+        def cargar():
+            for lista in [self._frames_armas, self._frames_personajes, self._frames_guardianes]:
+                for path in lista:
+                    try:
+                        CoreImage(path, mipmap=True)
+                    except Exception:
+                        pass
+
+        threading.Thread(target=cargar, daemon=True).start()
+
+    def on_leave(self, *args):
+        if self._anim_event:
+            self._anim_event.cancel()
+            self._anim_event = None
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _refrescar_fondo(self):
+        if self.gm is None:
+            return
+        if self.banner_actual == 'armas':
+            self.fondo.source = FONDO_GACHA_ARMAS
+        elif self.gm.faccion == 'anomalia':
+            self.fondo.source = FONDO_GACHA_ANOMALIA
+        else:
+            self.fondo.source = FONDO_GACHA_GUARDIANES
+        self.fondo.reload()
 
     def _refrescar_recursos(self):
         if self.gm is None:
             return
         recursos = self.gm.get_recursos()
-        if self.banner_actual == 'personajes':
-            tickets = recursos.get('tickets_personaje', 0)
-        else:
-            tickets = recursos.get('tickets_arma', 0)
-        self.label_tickets.text = f'Tickets: {tickets}'
+        self.lblTicketsPersonajes.text = str(recursos.get('tickets_personaje', 0))
+        self.lblTicketsArmas.text      = str(recursos.get('tickets_arma', 0))
 
     def _refrescar_pity(self):
         if self.gm is None:
@@ -150,59 +337,63 @@ class PantallaGacha(Screen):
         from database.repositories import pity_repo
         from database.config import GACHA_MODE
         resultado = pity_repo.get_pity(1, self.banner_actual)
-        contador = resultado["pity_count"] if resultado else 0
-        limite = 5 if GACHA_MODE == 'simple' else 90
-        faltan = max(0, limite - contador)
-        self.label_pity.text = (
-            f'Próximo [b]Grado S[/b] en: [color=#ffbf00]{faltan}[/color]'
+        contador  = resultado['pity_count'] if resultado else 0
+        limite    = 5 if GACHA_MODE == 'simple' else 90
+        faltan    = max(0, limite - contador)
+        self.lblPity.text = (
+            f'Próximo [b]S[/b] en: [color=#ffbf00]{faltan}[/color]'
         )
-        print(f"[DEBUG pity] contador={contador}, limite={limite}, faltan={faltan}")
 
-    # ── Navegación y banners ─────────────────────────────────
+    # ── Banners ───────────────────────────────────────────────────────────────
 
     def cambiar_banner(self, tipo):
         self.banner_actual = tipo
         if tipo == 'personajes':
-            self.btn_heroes.bg_color = PANEL_MEDIO
-            self.btn_armas.bg_color  = PANEL_OSCURO
+            self.btn_personajes.background_color = (1, 1, 1, 1)
+            self.btn_armas_tab.background_color  = (1, 1, 1, 0.4)
+            self.btnAccion.background_normal     = BOTON_INVOCAR
+            self.btnAccion.background_down       = BOTON_INVOCAR
         else:
-            self.btn_heroes.bg_color = PANEL_OSCURO
-            self.btn_armas.bg_color  = PANEL_MEDIO
+            self.btn_personajes.background_color = (1, 1, 1, 0.4)
+            self.btn_armas_tab.background_color  = (1, 1, 1, 1)
+            self.btnAccion.background_normal     = BOTON_FORJAR
+            self.btnAccion.background_down       = BOTON_FORJAR
+        self._refrescar_fondo()
         self._refrescar_recursos()
         self._refrescar_pity()
 
+    # ── Navegación ────────────────────────────────────────────────────────────
+
+    def navegarA(self, pantalla):
+        self.manager.transition = SlideTransition(direction='left')
+        self.manager.current = pantalla
+
     def ir_al_home(self, instance):
-        self.manager.transition = SlideTransition(direction='right')
+        self.manager.transition = SlideTransition(direction='left')
         self.manager.current = 'principal'
 
-    # ── Tirada ───────────────────────────────────────────────
+    # ── Tirada ────────────────────────────────────────────────────────────────
 
     def ejecutar_tirada(self, instance):
         if self.gm is None:
             return
-
         resultado = self.gm.tirar_gacha(self.banner_actual)
-
         if 'error' in resultado:
             self._mostrar_popup('Error', resultado['error'], (0.7, 0.1, 0.1, 1))
             return
 
         nombre  = resultado.get('nombre', '?')
         rareza  = resultado.get('rareza', 'B')
-        tipo    = resultado.get('tipo', '')
         es_frag = resultado.get('fragmento', False)
 
         if es_frag:
-            titulo  = f'✦ FRAGMENTO {rareza} ✦'
-            cuerpo  = f'{nombre}\n\n(Ya lo tenías — recibes fragmento)'
+            titulo = f'✦ FRAGMENTO {rareza} ✦'
+            cuerpo = f'{nombre}\n\n(Ya lo tenías — recibes fragmento)'
         else:
-            titulo  = f'✦ {rareza} ✦'
-            cuerpo  = nombre
+            titulo = f'✦ {rareza} ✦'
+            cuerpo = nombre
 
-        color = COLOR_RAREZA.get(rareza, BLANCO)
-        self._mostrar_popup(titulo, cuerpo, color)
-
-        # Refrescar tickets y pity tras la tirada
+        self._mostrar_popup(titulo, cuerpo, COLOR_RAREZA.get(rareza, BLANCO))
         self._refrescar_recursos()
         self._refrescar_pity()
 
@@ -212,20 +403,14 @@ class PantallaGacha(Screen):
             auto_dismiss=True,
             background_color=(0, 0, 0, 0)
         )
-
         contenedor = BoxLayout(
             orientation='vertical',
             padding=dp(20),
             spacing=dp(12)
         )
         with contenedor.canvas.before:
-            from kivy.graphics import Color, RoundedRectangle
             Color(0.05, 0.05, 0.1, 0.97)
             RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
-        contenedor.bind(
-            pos=lambda *a: None,  # el canvas se redibuja solo al moverse
-            size=lambda *a: None
-        )
 
         lbl_titulo = Label(
             text=titulo,

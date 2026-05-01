@@ -57,7 +57,16 @@ class PersonajeRepo:
             return [dict(r) for r in rows]
         finally:
             conn.close()
-
+# Devuelve la ruta al sprite de un personaje dado su faccion, clase, rareza y tipo de animacion
+def get_sprite_path(faccion: str, clase: str, rareza: str, tipo: str) -> str:
+    import os
+    base = f"{faccion.lower()}_{clase.lower()}_{rareza.lower()}"
+    for ext in ("png", "jpg", "jpeg"):
+        ruta = f"assets/characters/{base}/{base}_{tipo}.{ext}"
+        if os.path.exists(ruta):
+            return ruta
+    # Si no encuentra ninguno, devuelve el png por defecto (Kivy mostrará placeholder)
+    return f"assets/characters/{base}/{base}_{tipo}.png"
     #Cosas para que tengáis en cuenta:
     #1. Siempre se cierra la conexión con el finally, así se evitan errores de seguridad
     #2. Las consultas que devuelven más de un resultado se ordenan en una lista de diccionarios (cada diccionario es una fila de la bdd)
