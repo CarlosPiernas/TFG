@@ -67,11 +67,25 @@ FLECHA_TRANSMUTAR_ANOMALIA = 'assets/logos/FlechaTransmutarAnomalia.png'
 SPRITE_ANOMALIA = 'assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png'
 SPRITE_GUARDIAN = 'assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png'
 
+# Gacha
+FONDO_GACHA_ARMAS      = 'assets/fondos/Fondo_Gacha_Armas.png'
+FONDO_GACHA_ANOMALIA   = 'assets/fondos/Fondo_Gacha_Anomalia.png'
+FONDO_GACHA_GUARDIANES = 'assets/fondos/Fondo_Gacha_Guardianes.png'
+TITULO_GACHA           = 'assets/fondos/Titulo_Gacha.png'
+TITULO_PERSONAJES      = 'assets/fondos/Titulo_Personajes.png'
+TITULO_ARMAS           = 'assets/fondos/Titulo_Armas.png'
+BOTON_INVOCAR          = 'assets/fondos/Boton_Invocar.png'
+BOTON_FORJAR           = 'assets/fondos/Boton_Forjar.png'
+BOTON_TIENDA           = 'assets/fondos/Boton_Tienda.png'
+BOTON_VOLVER           = 'assets/logos/Boton.png'
+TICKET_PERSONAJES      = 'assets/fondos/Ticket_Personajes.png'
+TICKET_ARMAS           = 'assets/fondos/Ticket_Armas.png'
+
 # Fondos
 FONDO_SELECCION  = 'assets/fondos/Fondo_Seleccion.png'
 FONDO_ANOMALIAS  = 'assets/fondos/Fondo_Anomalias.png'
 FONDO_GUARDIANES = 'assets/fondos/Fondo_Guardianes.png'
-FONDO_GACHA = 'assets/fondos/Fondo_Gacha.png'
+FONDO_GACHA = 'assets/fondos/Fondo_Gacha_Anomalia.png'
 # Nombres de facción
 NOMBRE_ANOMALIA = 'ANOMALÍAS'
 NOMBRE_GUARDIAN = 'GUARDIANES'
