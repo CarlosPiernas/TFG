@@ -1,86 +1,123 @@
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
+from kivy.uix.image import Image
+from kivy.uix.button import Button
 from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
 from config import (
-    FONDO_SELECCION, PANEL_OSCURO, PANEL_MEDIO,
-    COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO, GRIS
+    PANEL_OSCURO, PANEL_MEDIO,
+    COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO, GRIS,
+    FONDO_FORJA_GUARDIAN, FONDO_FORJA_ANOMALIA,
+    SLOT_RUNA_GUARDIAN, SLOT_RUNA_ANOMALIA, SLOT_RUNA_RESULTADO,
+    ICONO_FORJAR, MARCO_BOTON, BOTON_FORJAR,
+    ICONO_TRANSMUTADOR,
+    FLECHA_TRANSMUTAR_GUARDIAN, FLECHA_TRANSMUTAR_ANOMALIA,
+    PLACEHOLDER
 )
 from widgets.componentes import BotonRedondeado
 
 
-class SlotForja(Widget):
-    def __init__(self, tipo='ingrediente', etiqueta='', **kwargs):
+# ── Slot de runa visual (fondo PNG + icono de la runa superpuesto) ─────────
+class SlotRunaVisual(FloatLayout):
+    """
+    Slot decorativo redondo. Capas:
+      1. Image con el PNG del altar (fondo)
+      2. Image con el icono de la runa asignada (encima, centrada)
+    Si no hay runa asignada, la capa 2 se oculta (opacity=0) para que no
+    se vea ningún recuadro blanco/placeholder en pantalla.
+    """
+    def __init__(self, fondo_path, **kwargs):
         super().__init__(**kwargs)
-        self.tipo     = tipo
-        self.etiqueta = etiqueta
-        self.runa     = None  # dict de la runa asignada o None
-        self.bind(pos=self._redibujar, size=self._redibujar)
+        self.runa = None  # dict de la runa asignada o None
+        self._fondo_path = fondo_path
+
+        # Capa 1: fondo del slot (siempre visible)
+        self.imagenFondo = Image(
+            source=fondo_path,
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            size_hint=(1, 1)
+        )
+        self.add_widget(self.imagenFondo)
+
+        # Capa 2: icono de la runa. Oculto al inicio (opacity=0).
+        # Ocupa solo el círculo central del altar, no todo el slot.
+        self.imagenRuna = Image(
+            source='',
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            size_hint=(0.45, 0.45),
+            opacity=0
+        )
+        self.add_widget(self.imagenRuna)
 
     def asignar(self, runa: dict):
-        # Asigna una runa al slot y actualiza la etiqueta visual
-        self.runa     = runa
-        self.etiqueta = runa.get('nombre', '?') if runa else ''
-        self._redibujar()
+        self.runa = runa
+        # Cuando los iconos por runa estén listos, leer aquí:
+        # self.imagenRuna.source = runa.get('icono', PLACEHOLDER)
+        self.imagenRuna.source = PLACEHOLDER
+        self.imagenRuna.reload()
+        self.imagenRuna.opacity = 1
 
     def limpiar(self):
-        self.runa     = None
-        self.etiqueta = self._etiqueta_default
-        self._redibujar()
+        self.runa = None
+        self.imagenRuna.source  = ''
+        self.imagenRuna.opacity = 0
 
-    def _redibujar(self, *args):
-        self.canvas.clear()
-        with self.canvas:
-            if self.tipo == 'resultado':
-                Color(0.1, 0.05, 0.15, 0.85)
-            else:
-                Color(0, 0, 0, 0.6)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(10)])
+    def cambiar_fondo(self, fondo_path):
+        # Permite cambiar el PNG del altar (al cambiar de facción).
+        self._fondo_path = fondo_path
+        self.imagenFondo.source = fondo_path
+        self.imagenFondo.reload()
 
-            if self.runa and self.tipo == 'ingrediente':
-                # Borde verde si tiene runa asignada
-                Color(0.2, 0.8, 0.3, 0.9)
-            elif self.tipo == 'resultado':
-                Color(*COLOR_ANOMALIAS[:3], 0.8)
-            else:
-                Color(0.6, 0.45, 0.1, 0.6)
-            Line(
-                rounded_rectangle=(self.x, self.y, self.width, self.height, dp(10)),
-                width=1.5
-            )
 
-        for child in list(self.children):
-            self.remove_widget(child)
+# ── Botón con marco decorativo (PNG de fondo + texto encima) ───────────────
+class BotonConMarco(FloatLayout):
+    """
+    Botón con un PNG de marco decorativo de fondo y texto encima.
+    Capas:
+      1. Image con el marco (PNG)
+      2. Button transparente que recibe el click + Label con el texto
+    """
+    def __init__(self, texto='VOLVER', marco_path=MARCO_BOTON,
+                 on_press_callback=None, **kwargs):
+        super().__init__(**kwargs)
+        self._on_press_callback = on_press_callback
 
-        # Texto del slot
-        if self.runa:
-            texto      = self.runa.get('nombre', '?')
-            color_text = (0.3, 1.0, 0.4, 1)
-        else:
-            texto      = self.etiqueta
-            color_text = (0.9, 0.75, 0.3, 0.7)
-
-        lbl = Label(
-            text=texto,
-            font_size=dp(11),
-            bold=True,
-            color=color_text,
-            pos=self.pos,
-            size=self.size,
-            halign='center',
-            valign='middle'
+        # Capa 1: marco decorativo
+        self.imagenMarco = Image(
+            source=marco_path,
+            allow_stretch=True,
+            keep_ratio=False,
+            mipmap=True,
+            pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            size_hint=(1, 1)
         )
-        lbl.bind(size=lbl.setter('text_size'))
-        self.add_widget(lbl)
+        self.add_widget(self.imagenMarco)
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            return True
-        return super().on_touch_down(touch)
+        # Capa 2: botón transparente con el texto encima
+        self.boton = Button(
+            text=texto,
+            background_normal='',
+            background_color=(0, 0, 0, 0),  # totalmente transparente
+            color=BLANCO,
+            font_size=dp(15),
+            bold=True,
+            pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            size_hint=(1, 1)
+        )
+        if on_press_callback is not None:
+            self.boton.bind(on_press=on_press_callback)
+        self.add_widget(self.boton)
 
 
 class PantallaForja(Screen):
@@ -88,219 +125,250 @@ class PantallaForja(Screen):
         super().__init__(**kwargs)
         self.gm = gm
 
+        # ── Fondo de pantalla (cambia según facción en on_pre_enter) ──────
         with self.canvas.before:
             Color(1, 1, 1, 1)
-            self._bg_rect = Rectangle(source=FONDO_SELECCION, pos=self.pos, size=self.size)
+            self._bg_rect = Rectangle(
+                source=FONDO_FORJA_GUARDIAN,
+                pos=self.pos,
+                size=self.size
+            )
         self.bind(pos=self._actualizarFondo, size=self._actualizarFondo)
 
-        overlayWidget = Widget(size_hint=(1, 1))
-        with overlayWidget.canvas:
-            Color(0, 0, 0, 0.6)
-            self._overlay = Rectangle(pos=overlayWidget.pos, size=overlayWidget.size)
-        overlayWidget.bind(
-            pos=lambda *a: setattr(self._overlay, 'pos', overlayWidget.pos),
-            size=lambda *a: setattr(self._overlay, 'size', overlayWidget.size)
+        # Velo oscuro para mejorar contraste del contenido sobre el fondo
+        with self.canvas.before:
+            Color(0, 0, 0, 0.35)
+            self._overlay = Rectangle(pos=self.pos, size=self.size)
+        self.bind(
+            pos=lambda *a: setattr(self._overlay, 'pos', self.pos),
+            size=lambda *a: setattr(self._overlay, 'size', self.size)
         )
 
-        contenedorPrincipal = BoxLayout(
-            orientation='vertical',
-            padding=dp(10),
+        raiz = BoxLayout(orientation='vertical', spacing=0)
+
+        # ══════════════════════════════════════════════════════════════════
+        # CABECERA (12%) — Título "FORJA"
+        # ══════════════════════════════════════════════════════════════════
+        cabecera = BoxLayout(
+            orientation='horizontal',
+            size_hint=(1, 0.12),
+            padding=[dp(8), dp(8)]
+        )
+        with cabecera.canvas.before:
+            Color(0, 0, 0, 0.55)
+            self._cabRect = Rectangle(pos=cabecera.pos, size=cabecera.size)
+        cabecera.bind(
+            pos=lambda *a: setattr(self._cabRect, 'pos', cabecera.pos),
+            size=lambda *a: setattr(self._cabRect, 'size', cabecera.size)
+        )
+
+        lblTitulo = Label(
+            text='— FORJA —',
+            font_size=dp(22),
+            bold=True,
+            color=COLOR_GUARDIANES,
+            halign='center',
+            valign='middle'
+        )
+        lblTitulo.bind(size=lblTitulo.setter('text_size'))
+        cabecera.add_widget(lblTitulo)
+
+        # ══════════════════════════════════════════════════════════════════
+        # CONTADOR DE TRANSMUTADORES (8%) — "Transmutadores: N" + icono
+        # ══════════════════════════════════════════════════════════════════
+        filaContador = BoxLayout(
+            orientation='horizontal',
+            size_hint=(1, 0.08),
+            padding=[dp(20), dp(4)],
             spacing=dp(8)
         )
+        filaContador.add_widget(Widget(size_hint=(1, 1)))
 
-        # Título
-        cajaTitulo = BoxLayout(size_hint=(1, None), height=dp(44), padding=[dp(8), dp(4)])
-        with cajaTitulo.canvas.before:
-            Color(0, 0, 0, 0.6)
-            self._titleRect = RoundedRectangle(pos=cajaTitulo.pos, size=cajaTitulo.size, radius=[dp(8)])
-            Color(0.6, 0.45, 0.1, 0.5)
-            self._titleBorde = Line(
-                rounded_rectangle=(cajaTitulo.x, cajaTitulo.y, cajaTitulo.width, cajaTitulo.height, dp(8)),
-                width=1.2
-            )
-        cajaTitulo.bind(
-            pos=lambda *a: self._actualizarCaja(cajaTitulo, self._titleRect, self._titleBorde),
-            size=lambda *a: self._actualizarCaja(cajaTitulo, self._titleRect, self._titleBorde)
-        )
-        etiquetaTitulo = Label(
-            text='— FORJA —',
-            font_size=dp(18),
-            bold=True,
-            color=(0.9, 0.75, 0.3, 1),
-            size_hint=(1, 1),
-            halign='center',
-            valign='middle'
-        )
-        etiquetaTitulo.bind(size=etiquetaTitulo.setter('text_size'))
-        cajaTitulo.add_widget(etiquetaTitulo)
-        contenedorPrincipal.add_widget(cajaTitulo)
-
-        # Contador de transmutadores
         self.etiquetaTransmutadores = Label(
-            text='Transmutadores: —',
-            font_size=dp(12),
-            color=(0.9, 0.75, 0.3, 1),
-            size_hint=(1, None),
-            height=dp(24),
-            halign='center',
-            valign='middle'
+            text='Transmutadores: 0',
+            font_size=dp(14),
+            bold=True,
+            color=BLANCO,
+            halign='right',
+            valign='middle',
+            size_hint=(None, 1),
+            width=dp(180)
         )
         self.etiquetaTransmutadores.bind(size=self.etiquetaTransmutadores.setter('text_size'))
-        contenedorPrincipal.add_widget(self.etiquetaTransmutadores)
+        filaContador.add_widget(self.etiquetaTransmutadores)
 
-        # Panel central de combinación
-        panelCombinacion = FloatLayout(size_hint=(1, 1))
-        with panelCombinacion.canvas.before:
-            Color(0, 0, 0, 0.5)
-            self._panelRect = RoundedRectangle(
-                pos=panelCombinacion.pos, size=panelCombinacion.size, radius=[dp(12)]
-            )
-            Color(0.6, 0.45, 0.1, 0.35)
-            self._panelBorde = Line(
-                rounded_rectangle=(
-                    panelCombinacion.x, panelCombinacion.y,
-                    panelCombinacion.width, panelCombinacion.height, dp(12)
-                ),
-                width=1.0
-            )
-        panelCombinacion.bind(
-            pos=lambda *a: self._actualizarPanel(panelCombinacion),
-            size=lambda *a: self._actualizarPanel(panelCombinacion)
+        self.iconoTransmutador = Image(
+            source=ICONO_TRANSMUTADOR,
+            allow_stretch=True,
+            keep_ratio=True,
+            size_hint=(None, 1),
+            width=dp(32),
+            mipmap=True
+        )
+        filaContador.add_widget(self.iconoTransmutador)
+
+        filaContador.add_widget(Widget(size_hint=(1, 1)))
+
+        # ══════════════════════════════════════════════════════════════════
+        # ZONA DE FUSIÓN (50%) — Runa1+Runa2 (izq) → Resultado (der)
+        # ══════════════════════════════════════════════════════════════════
+        zonaFusion = BoxLayout(
+            orientation='horizontal',
+            size_hint=(1, 0.50),
+            padding=[dp(12), dp(8)],
+            spacing=dp(4)
         )
 
-        # Slots
-        self.slotResultado = SlotForja(
-            tipo='resultado',
-            etiqueta='RESULTADO',
-            size_hint=(None, None),
-            size=(dp(80), dp(80)),
-            pos_hint={'center_x': 0.5, 'center_y': 0.60}
+        # Columna izquierda: dos slots de entrada apilados
+        columnaEntradas = BoxLayout(
+            orientation='vertical',
+            size_hint=(0.35, 1),
+            spacing=dp(12),
+            padding=[dp(8), dp(8)]
         )
-        self.slotIng1 = SlotForja(
-            tipo='ingrediente',
-            etiqueta='RUNA 1',
-            size_hint=(None, None),
-            size=(dp(70), dp(70)),
-            pos_hint={'center_x': 0.25, 'center_y': 0.35}
-        )
-        self.slotIng2 = SlotForja(
-            tipo='ingrediente',
-            etiqueta='RUNA 2',
-            size_hint=(None, None),
-            size=(dp(70), dp(70)),
-            pos_hint={'center_x': 0.75, 'center_y': 0.35}
-        )
-        # Guardar etiqueta default para limpiar
-        self.slotIng1._etiqueta_default = 'RUNA 1'
-        self.slotIng2._etiqueta_default = 'RUNA 2'
-        self.slotResultado._etiqueta_default = 'RESULTADO'
+        self.slotIng1 = SlotRunaVisual(SLOT_RUNA_GUARDIAN, size_hint=(1, 1))
+        self.slotIng2 = SlotRunaVisual(SLOT_RUNA_GUARDIAN, size_hint=(1, 1))
+        columnaEntradas.add_widget(self.slotIng1)
+        columnaEntradas.add_widget(self.slotIng2)
 
-        etiquetaFlecha = Label(
-            text='↑',
-            font_size=dp(22),
-            color=(0.9, 0.75, 0.3, 0.6),
-            size_hint=(None, None),
-            size=(dp(30), dp(30)),
-            pos_hint={'center_x': 0.5, 'center_y': 0.47}
+        # Click en slot lleno → limpiar ese slot
+        self.slotIng1.bind(on_touch_down=self._touchSlotIng1)
+        self.slotIng2.bind(on_touch_down=self._touchSlotIng2)
+
+        # Columna central: flecha decorativa (PNG, cambia según facción)
+        columnaFlecha = BoxLayout(
+            orientation='vertical',
+            size_hint=(0.30, 1),
+            padding=[dp(2), dp(8)]
+        )
+        self.imgFlecha = Image(
+            source=FLECHA_TRANSMUTAR_GUARDIAN,
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            size_hint=(1, 1)
+        )
+        columnaFlecha.add_widget(self.imgFlecha)
+
+        # Columna derecha: slot resultado (más pequeño, centrado verticalmente)
+        columnaResultado = BoxLayout(
+            orientation='vertical',
+            size_hint=(0.35, 1),
+            padding=[dp(8), dp(8)]
+        )
+        columnaResultado.add_widget(Widget(size_hint=(1, 0.20)))
+        self.slotResultado = SlotRunaVisual(SLOT_RUNA_RESULTADO, size_hint=(1, 0.60))
+        columnaResultado.add_widget(self.slotResultado)
+        columnaResultado.add_widget(Widget(size_hint=(1, 0.20)))
+
+        zonaFusion.add_widget(columnaEntradas)
+        zonaFusion.add_widget(columnaFlecha)
+        zonaFusion.add_widget(columnaResultado)
+
+        # ══════════════════════════════════════════════════════════════════
+        # INVENTARIO DE RUNAS (15%) — scroll horizontal con runas básicas
+        # ══════════════════════════════════════════════════════════════════
+        contenedorInventario = BoxLayout(
+            orientation='vertical',
+            size_hint=(1, 0.15),
+            padding=[dp(8), dp(4)]
+        )
+        with contenedorInventario.canvas.before:
+            Color(0, 0, 0, 0.55)
+            self._invRect = Rectangle(pos=contenedorInventario.pos, size=contenedorInventario.size)
+        contenedorInventario.bind(
+            pos=lambda *a: setattr(self._invRect, 'pos', contenedorInventario.pos),
+            size=lambda *a: setattr(self._invRect, 'size', contenedorInventario.size)
         )
 
-        etiquetaInfo = Label(
-            text='Pulsa una runa del inventario\npara asignarla al slot',
-            font_size=dp(10),
-            color=(0.7, 0.65, 0.5, 0.9),
-            size_hint=(0.9, None),
-            height=dp(30),
-            pos_hint={'center_x': 0.5, 'top': 0.18},
-            halign='center',
-            valign='middle'
-        )
-        etiquetaInfo.bind(size=etiquetaInfo.setter('text_size'))
-
-        panelCombinacion.add_widget(self.slotIng1)
-        panelCombinacion.add_widget(self.slotIng2)
-        panelCombinacion.add_widget(self.slotResultado)
-        panelCombinacion.add_widget(etiquetaFlecha)
-        panelCombinacion.add_widget(etiquetaInfo)
-        contenedorPrincipal.add_widget(panelCombinacion)
-
-        # Lista de runas disponibles (scroll horizontal)
-        from kivy.uix.scrollview import ScrollView
-        scrollRunas = ScrollView(
-            size_hint=(1, None),
-            height=dp(60),
+        scrollInv = ScrollView(
+            size_hint=(1, 1),
             do_scroll_x=True,
-            do_scroll_y=False
+            do_scroll_y=False,
+            bar_width=dp(4)
         )
         self.filaRunas = BoxLayout(
             orientation='horizontal',
             size_hint=(None, 1),
-            spacing=dp(6),
-            padding=dp(4)
+            spacing=dp(8),
+            padding=[dp(6), dp(2)]
         )
         self.filaRunas.bind(minimum_width=self.filaRunas.setter('width'))
-        scrollRunas.add_widget(self.filaRunas)
-        contenedorPrincipal.add_widget(scrollRunas)
+        scrollInv.add_widget(self.filaRunas)
+        contenedorInventario.add_widget(scrollInv)
 
-        # Barra inferior
-        barraInferior = BoxLayout(
+        # ══════════════════════════════════════════════════════════════════
+        # BOTONERA INFERIOR (15%) — [Volver con marco]   [Forjar (icono yunque)]
+        # ══════════════════════════════════════════════════════════════════
+        botonera = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, None),
-            height=dp(60),
-            spacing=dp(8),
-            padding=[dp(10), dp(8)]
+            size_hint=(1, 0.15),
+            padding=[dp(20), dp(10)],
+            spacing=dp(20)
         )
-        with barraInferior.canvas.before:
-            Color(0, 0, 0, 0.85)
-            self._rectBarraInf = RoundedRectangle(
-                pos=barraInferior.pos, size=barraInferior.size,
-                radius=[dp(20), dp(20), 0, 0]
-            )
-        barraInferior.bind(
-            pos=lambda *a: setattr(self._rectBarraInf, 'pos', barraInferior.pos),
-            size=lambda *a: setattr(self._rectBarraInf, 'size', barraInferior.size)
+        with botonera.canvas.before:
+            Color(0, 0, 0, 0.55)
+            self._botRect = Rectangle(pos=botonera.pos, size=botonera.size)
+        botonera.bind(
+            pos=lambda *a: setattr(self._botRect, 'pos', botonera.pos),
+            size=lambda *a: setattr(self._botRect, 'size', botonera.size)
         )
 
-        botonAtras = BotonRedondeado(
-            text='ATRÁS',
-            bg_color=(0.05, 0.05, 0.1, 0.9),
-            text_color=(0.9, 0.75, 0.3, 1),
-            radius=8, size_hint=(1, 1), font_size=dp(11), bold=True
+        # Botón VOLVER — con marco decorativo Boton.png + texto "VOLVER" encima
+        botonVolver = BotonConMarco(
+            texto='VOLVER',
+            marco_path=MARCO_BOTON,
+            on_press_callback=self.volverAInventario,
+            size_hint=(0.5, 1)
         )
-        botonAtras.bind(on_press=self.volverAInventario)
 
-        self.botonForjar = BotonRedondeado(
-            text='⚒',
-            bg_color=(*COLOR_ANOMALIAS[:3], 0.85),
-            text_color=BLANCO,
-            radius=50, size_hint=(None, 1), width=dp(54),
-            font_size=dp(22), bold=True
+        # Botón FORJAR — con marco decorativo BotonForjar.png + texto "FORJAR"
+        botonForjar = BotonConMarco(
+            texto='FORJAR',
+            marco_path=BOTON_FORJAR,
+            on_press_callback=self.intentarForja,
+            size_hint=(0.5, 1)
         )
-        self.botonForjar.bind(on_press=self.intentarForja)
 
-        botonLimpiar = BotonRedondeado(
-            text='LIMPIAR',
-            bg_color=(0.05, 0.05, 0.1, 0.9),
-            text_color=(*COLOR_GUARDIANES[:3], 1),
-            radius=8, size_hint=(1, 1), font_size=dp(11), bold=True
-        )
-        botonLimpiar.bind(on_press=self.limpiarSlots)
+        botonera.add_widget(botonVolver)
+        botonera.add_widget(botonForjar)
 
-        barraInferior.add_widget(botonAtras)
-        barraInferior.add_widget(self.botonForjar)
-        barraInferior.add_widget(botonLimpiar)
-        contenedorPrincipal.add_widget(barraInferior)
+        # ══════════════════════════════════════════════════════════════════
+        # MONTAJE FINAL: cabecera (12) + contador (8) + fusión (50) +
+        #                inventario (15) + botonera (15) = 100%
+        # ══════════════════════════════════════════════════════════════════
+        raiz.add_widget(cabecera)
+        raiz.add_widget(filaContador)
+        raiz.add_widget(zonaFusion)
+        raiz.add_widget(contenedorInventario)
+        raiz.add_widget(botonera)
+        self.add_widget(raiz)
 
-        self.add_widget(overlayWidget)
-        self.add_widget(contenedorPrincipal)
-
-    # ── Kivy hooks ──────────────────────────────────────────
+    # ── Eventos del ciclo de vida ────────────────────────────────────────
 
     def on_pre_enter(self, *args):
+        self._aplicarFaccion()
         self.limpiarSlots()
         self._refrescarTransmutadores()
         self._cargarRunasDisponibles()
 
-    # ── Refresco de datos ────────────────────────────────────
+    def _aplicarFaccion(self):
+        if self.gm is None:
+            return
+        if self.gm.faccion == 'anomalia':
+            self._bg_rect.source = FONDO_FORJA_ANOMALIA
+            slot_path = SLOT_RUNA_ANOMALIA
+            self.imgFlecha.source = FLECHA_TRANSMUTAR_ANOMALIA
+        else:
+            self._bg_rect.source = FONDO_FORJA_GUARDIAN
+            slot_path = SLOT_RUNA_GUARDIAN
+            self.imgFlecha.source = FLECHA_TRANSMUTAR_GUARDIAN
+
+        self.slotIng1.cambiar_fondo(slot_path)
+        self.slotIng2.cambiar_fondo(slot_path)
+        self.imgFlecha.reload()
+
+    # ── Refresco de datos ────────────────────────────────────────────────
 
     def _refrescarTransmutadores(self):
         if self.gm is None:
@@ -332,26 +400,43 @@ class PantallaForja(Screen):
                 text_color=(0.9, 0.75, 0.3, 1),
                 radius=8,
                 size_hint=(None, 1),
-                width=dp(80),
+                width=dp(100),
                 font_size=dp(10),
                 bold=True
             )
             btn.bind(on_press=lambda _, r=runa: self._asignarRuna(r))
             self.filaRunas.add_widget(btn)
 
+    # ── Asignación / limpieza de slots ───────────────────────────────────
+
     def _asignarRuna(self, runa: dict):
-        # Asigna al primer slot vacío; si ambos están llenos, reemplaza el slot 1
         if self.slotIng1.runa is None:
             self.slotIng1.asignar(runa)
         elif self.slotIng2.runa is None:
             self.slotIng2.asignar(runa)
         else:
-            # Ambos llenos — reemplaza slot 1
             self.slotIng1.asignar(runa)
-        # Limpiar resultado previo
         self.slotResultado.limpiar()
 
-    # ── Acciones ─────────────────────────────────────────────
+    def _touchSlotIng1(self, instance, touch):
+        # Click en slot lleno → limpiar ese slot.
+        if instance.collide_point(*touch.pos) and instance.runa is not None:
+            instance.limpiar()
+            return True
+        return False
+
+    def _touchSlotIng2(self, instance, touch):
+        if instance.collide_point(*touch.pos) and instance.runa is not None:
+            instance.limpiar()
+            return True
+        return False
+
+    def limpiarSlots(self, *args):
+        self.slotIng1.limpiar()
+        self.slotIng2.limpiar()
+        self.slotResultado.limpiar()
+
+    # ── Acción principal: transmutar ─────────────────────────────────────
 
     def intentarForja(self, instance):
         if self.gm is None:
@@ -361,7 +446,11 @@ class PantallaForja(Screen):
         runa2 = self.slotIng2.runa
 
         if runa1 is None or runa2 is None:
-            self._mostrarPopup('Faltan runas', 'Coloca una runa en cada slot.', (0.7, 0.3, 0.1, 1))
+            self._mostrarPopup(
+                'Faltan runas',
+                'Coloca una runa en cada slot.',
+                (0.7, 0.3, 0.1, 1)
+            )
             return
 
         resultado = self.gm.transmutar(runa1.get('nombre', ''), runa2.get('nombre', ''))
@@ -370,7 +459,6 @@ class PantallaForja(Screen):
             self._mostrarPopup('Error', resultado['mensaje'], (0.7, 0.1, 0.1, 1))
             return
 
-        # Mostrar resultado en el slot
         self.slotResultado.asignar(resultado['resultado'])
         self.slotIng1.limpiar()
         self.slotIng2.limpiar()
@@ -378,29 +466,26 @@ class PantallaForja(Screen):
         color = (0.2, 0.8, 0.3, 1) if resultado['es_valida'] else (0.7, 0.1, 0.1, 1)
         self._mostrarPopup('Resultado', resultado['mensaje'], color)
 
-        # Refrescar transmutadores y runas disponibles
         self._refrescarTransmutadores()
         self._cargarRunasDisponibles()
 
-    def limpiarSlots(self, *args):
-        self.slotIng1.runa     = None
-        self.slotIng1.etiqueta = 'RUNA 1'
-        self.slotIng1._redibujar()
-        self.slotIng2.runa     = None
-        self.slotIng2.etiqueta = 'RUNA 2'
-        self.slotIng2._redibujar()
-        self.slotResultado.runa     = None
-        self.slotResultado.etiqueta = 'RESULTADO'
-        self.slotResultado._redibujar()
+    # ── Popup auxiliar ───────────────────────────────────────────────────
 
     def _mostrarPopup(self, titulo, mensaje, color_titulo):
-        from kivy.graphics import Color, RoundedRectangle
-        modal = ModalView(size_hint=(0.8, 0.4), auto_dismiss=True, background_color=(0, 0, 0, 0))
+        modal = ModalView(
+            size_hint=(0.8, 0.4),
+            auto_dismiss=True,
+            background_color=(0, 0, 0, 0)
+        )
 
         contenedor = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
         with contenedor.canvas.before:
             Color(0.05, 0.05, 0.1, 0.97)
-            RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+            self._popRect = RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+        contenedor.bind(
+            pos=lambda *a: setattr(self._popRect, 'pos', contenedor.pos),
+            size=lambda *a: setattr(self._popRect, 'size', contenedor.size)
+        )
 
         lbl_titulo = Label(
             text=titulo, font_size=dp(18), bold=True, color=color_titulo,
@@ -427,17 +512,7 @@ class PantallaForja(Screen):
         modal.add_widget(contenedor)
         modal.open()
 
-    # ── Helpers ───────────────────────────────────────────────
-
-    def _actualizarCaja(self, widget, rect, borde):
-        rect.pos  = widget.pos
-        rect.size = widget.size
-        borde.rounded_rectangle = (widget.x, widget.y, widget.width, widget.height, dp(10))
-
-    def _actualizarPanel(self, panel):
-        self._panelRect.pos  = panel.pos
-        self._panelRect.size = panel.size
-        self._panelBorde.rounded_rectangle = (panel.x, panel.y, panel.width, panel.height, dp(12))
+    # ── Helpers ──────────────────────────────────────────────────────────
 
     def _actualizarFondo(self, *args):
         self._bg_rect.pos  = self.pos

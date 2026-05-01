@@ -273,6 +273,14 @@ class PantallaCombate(Screen):
 
         resultado = self.gm.iniciar_combate(nodo_id)
 
+        # Si el backend bloquea por vida insuficiente, mostrar mensaje
+        # claro y resetear el botón. No es derrota: es un aviso.
+        if resultado.get('vida_insuficiente'):
+            for linea in resultado.get('log', []):
+                self.añadirMensajeLog(linea)
+            self.botonCombate.text = 'COMBATIR'
+            return
+
         # Mostrar log línea a línea
         for linea in resultado.get('log', []):
             self.añadirMensajeLog(linea)
