@@ -127,7 +127,9 @@ def initialize_db():
                 ultima_regen        TEXT,                          -- para calcular próxima regeneración
                 transmutadores      INTEGER NOT NULL DEFAULT 0,  --transmutadores para la fusión de runas
                 fragmentos_rojos    INTEGER NOT NULL DEFAULT 0,   -- por personaje duplicado en gacha
-                fragmentos_azules   INTEGER NOT NULL DEFAULT 0    -- por arma duplicada en gacha
+                fragmentos_azules   INTEGER NOT NULL DEFAULT 0,    -- por arma duplicada en gacha
+                vida_actual         INTEGER NOT NULL DEFAULT 0,
+                vida_max            INTEGER NOT NULL DEFAULT 0
             )
         """)
 

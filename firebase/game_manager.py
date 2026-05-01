@@ -119,9 +119,16 @@ class GameManager:
             inv = inventario_repo.get_inventario_by_tipo('personaje')
             if inv:
                 self.personaje_activo_id = inv[0]['id']
+
+        # Inicializar la vida del jugador a vida llena del personaje inicial.
+        # No tiene equipo aún, así que vida_max = pv_base.
+        pv_inicial = personaje_b.get("pv_base", 0)
+        recursos_repo.set_vida(pv_inicial, pv_inicial)
+
         print(f"[DEBUG] faccion={self.faccion}, personaje_activo_id={self.personaje_activo_id}")
         print(f"[GameManager] Facción: {self.faccion}. "
-            f"Personaje inicial: {personaje_b['nombre']} (ID inv: {self.personaje_activo_id})")
+            f"Personaje inicial: {personaje_b['nombre']} (ID inv: {self.personaje_activo_id}) "
+            f"Vida inicial: {pv_inicial}/{pv_inicial}")
 
     # ═══════════════════════════════════
     # PERSONAJE ACTIVO
@@ -147,7 +154,28 @@ class GameManager:
         return datos
 
     def cambiar_personaje_activo(self, inv_id: int):
+        # Al cambiar de personaje activo, su vida_max es distinta y la vida persistida
+        # del anterior deja de tener sentido. Reiniciamos a vida llena del nuevo.
         self.personaje_activo_id = inv_id
+        info = self.get_personaje_activo_info()
+        if info is not None:
+            pv = info.get("pv_base", 0)
+            # Aplicamos también bonus de PV del equipo actual del nuevo personaje
+            equipo = info.get("equipo", [])
+            inv_items = {it["id"]: it for it in inventario_repo.get_inventario()}
+            for slot in equipo:
+                inv_item = inv_items.get(slot.get("item_inv_id"))
+                if inv_item is None:
+                    continue
+                if inv_item["tipo"] == "arma":
+                    datos = arma_repo.get_by_id(inv_item["catalogo_id"])
+                elif inv_item["tipo"] == "runa":
+                    datos = runa_repo.get_by_id(inv_item["catalogo_id"])
+                else:
+                    datos = None
+                if datos:
+                    pv += datos.get("bonus_pv", 0)
+            recursos_repo.set_vida(pv, pv)
 
     # ═══════════════════════════════════
     # INVENTARIO
@@ -257,6 +285,25 @@ class GameManager:
         if nodo["estado"] == "bloqueado":
             return {"victoria": False, "log": ["Nodo bloqueado."], "recompensas": None}
 
+        # ── Bloqueo por vida insuficiente ──────────────────────────────
+        # Si el jugador llega con 0 vida (derrota previa), no puede pelear.
+        # Debe usar una poción antes. Devolvemos flag específico para que
+        # la UI muestre el mensaje correcto sin marcar "derrota".
+        vida_db = recursos_repo.get_vida()
+        if vida_db["vida_max"] > 0 and vida_db["vida_actual"] <= 0:
+            recursos = recursos_repo.get_recursos() or {}
+            pociones = recursos.get("pociones", 0)
+            return {
+                "victoria": False,
+                "vida_insuficiente": True,
+                "log": [
+                    f"⚠ No tienes vida suficiente para combatir (0/{vida_db['vida_max']}).",
+                    f"Usa una poción para curarte antes de continuar.",
+                    f"Pociones disponibles: {pociones}.",
+                ],
+                "recompensas": None,
+            }
+
         enemigo = self._enemy_loader.crear_enemigo(nodo_id)
         if enemigo is None:
             return {"victoria": False, "log": ["No se pudo cargar el enemigo."], "recompensas": None}
@@ -278,6 +325,12 @@ class GameManager:
                 victoria = False
         else:
             victoria = jugador.esta_vivo()
+
+        # ── Persistencia de vida tras combate ──────────────────────────
+        # Si pierde, queda con vida 0 → el jugador deberá usar una poción
+        # antes de poder combatir de nuevo (bloqueo gestionado al inicio).
+        # Si gana, se persiste la vida resultante para el siguiente nodo.
+        recursos_repo.set_vida(jugador.vida, jugador.vida_max)
 
         recompensas = None
         if victoria:
@@ -333,9 +386,20 @@ class GameManager:
                             jugador.vida += bv
                             jugador.vida_max += bv
                     break
-        print(f"[DEBUG] _crear_jugador personaje_activo_id={self.personaje_activo_id}")
-        info = self.get_personaje_activo_info()
-        print(f"[DEBUG] info={info}")
+
+        # ── Sobrescribir vida con la persistida en BD ──────────────────
+        # En este punto jugador.vida == jugador.vida_max (recién creado con bonuses).
+        # Si hay vida persistida válida, la usamos. Si no, persistimos la vida llena.
+        vida_db = recursos_repo.get_vida()
+        if vida_db["vida_max"] > 0 and vida_db["vida_actual"] > 0:
+            # Usamos vida_actual de BD; vida_max se mantiene la calculada con bonuses
+            # (puede haber cambiado al equipar/desequipar entre nodos)
+            jugador.vida = min(vida_db["vida_actual"], jugador.vida_max)
+        else:
+            # Primera vez o derrota previa restaurada: persistimos vida llena
+            recursos_repo.set_vida(jugador.vida_max, jugador.vida_max)
+
+        print(f"[DEBUG] _crear_jugador personaje_activo_id={self.personaje_activo_id} vida={jugador.vida}/{jugador.vida_max}")
         return jugador
 
     def _dar_recompensas(self, nodo_id: int) -> dict:
@@ -389,6 +453,8 @@ class GameManager:
         pociones = recursos_repo.get_pociones()
         if pociones and pociones["pociones"] > 0:
             recursos_repo.add_recurso("pociones", -1)
+            # Restaurar vida al máximo persistido
+            recursos_repo.restaurar_vida()
             return True
         return False
 
