@@ -8,9 +8,11 @@ from kivy.uix.button import Button
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
 from config import (
-    PANEL_MEDIO, COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO, COLOR_VIDA,
+    PANEL_MEDIO, COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO,
+    COLOR_VIDA, COLOR_VIDA_MEDIA, COLOR_VIDA_BAJA, COLOR_STATS,
     FONDO_ANOMALIAS, FONDO_GUARDIANES, NOMBRE_ANOMALIA,
     LOGO_ANOMALIA, LOGO_GUARDIAN,
+    MARCO_VIDA,
     ICONO_MONEDA, ICONO_GACHA, ICONO_INVENTARIO,
     ICONO_ATK, ICONO_DEF, ICONO_DES, ICONO_MAG, ICONO_POCION,
     FONDO_RUNA_ANOMALIA, FONDO_RUNA_GUARDIAN,
@@ -19,23 +21,87 @@ from config import (
 )
 
 
-def _icono_label(icono, texto, font_size=dp(11), color=BLANCO):
-    fila = BoxLayout(orientation='horizontal', spacing=dp(4), size_hint=(1, 1))
-    fila.add_widget(Widget(size_hint=(1, 1)))
+# ── Tamaño de la barra de vida (proporción del contenedor) ──────────────────
+# 1.0 = ocupa todo. Valores menores = barra más pequeña, centrada.
+# Si quieres la barra más fina, baja BARRA_VIDA_ALTO_PCT.
+# Si quieres la barra más corta, baja BARRA_VIDA_ANCHO_PCT.
+BARRA_VIDA_ANCHO_PCT = 0.85   # 85% del ancho del contenedor
+BARRA_VIDA_ALTO_PCT  = 0.55   # 55% del alto del contenedor
+
+
+def _stat_fila(icono_path, etiqueta_texto):
+    """Fila [icono | "ETIQUETA: —"] para el panel de stats."""
+    fila = BoxLayout(
+        orientation='horizontal',
+        size_hint=(1, 1),
+        spacing=dp(6),
+        padding=[dp(2), dp(1)]
+    )
     fila.add_widget(Image(
-        source=icono,
+        source=icono_path,
         size_hint=(None, None),
-        size=(dp(32), dp(32)),
+        size=(dp(26), dp(26)),
         allow_stretch=True,
         keep_ratio=True,
         mipmap=True,
         pos_hint={'center_y': 0.5}
     ))
-    lbl = Label(text=texto, font_size=font_size, color=color, halign='left', valign='middle', size_hint=(None, 1), width=dp(30))
+    lbl = Label(
+        text=f"{etiqueta_texto}: —",
+        font_size=dp(14),
+        bold=True,
+        color=BLANCO,
+        halign='left',
+        valign='middle',
+        size_hint=(1, 1)
+    )
     lbl.bind(size=lbl.setter('text_size'))
     fila.add_widget(lbl)
-    fila.add_widget(Widget(size_hint=(1, 1)))
-    return fila
+    return fila, lbl
+
+
+def _equipo_fila(icono_inicial, ancho_icono):
+    """Fila [icono | (nombre arriba, stats debajo)] para runas y arma."""
+    fila = BoxLayout(
+        orientation='horizontal',
+        size_hint=(1, 1),
+        spacing=dp(8),
+        padding=[dp(2), dp(2)]
+    )
+    icono = Image(
+        source=icono_inicial,
+        size_hint=(None, 1),
+        width=ancho_icono,
+        allow_stretch=True,
+        keep_ratio=True,
+        mipmap=True
+    )
+    info = BoxLayout(orientation='vertical', size_hint=(1, 1), spacing=dp(0))
+    lbl_nombre = Label(
+        text='—',
+        font_size=dp(13),
+        color=BLANCO,
+        bold=True,
+        halign='left',
+        valign='bottom',
+        size_hint=(1, 0.5)
+    )
+    lbl_nombre.bind(size=lbl_nombre.setter('text_size'))
+    lbl_stats = Label(
+        text='',
+        font_size=dp(12),
+        color=COLOR_STATS,
+        bold=True,
+        halign='left',
+        valign='top',
+        size_hint=(1, 0.5)
+    )
+    lbl_stats.bind(size=lbl_stats.setter('text_size'))
+    info.add_widget(lbl_nombre)
+    info.add_widget(lbl_stats)
+    fila.add_widget(icono)
+    fila.add_widget(info)
+    return fila, icono, lbl_nombre, lbl_stats
 
 
 class PantallaPrincipal(Screen):
@@ -50,10 +116,12 @@ class PantallaPrincipal(Screen):
 
         raiz = BoxLayout(orientation='vertical', spacing=0)
 
-        # ── BARRA SUPERIOR (10%) ──────────────────────────────────────────────
+        # ── BARRA SUPERIOR (14%) ──────────────────────────────────────────────
+        # Subida de 10% a 14% para dar más altura al marco decorativo de la
+        # barra de vida. El extra se compensa reduciendo el splash del personaje.
         barraTop = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, 0.10),
+            size_hint=(1, 0.14),
             padding=[dp(8), dp(8), dp(16), dp(8)],
             spacing=dp(8)
         )
@@ -70,27 +138,56 @@ class PantallaPrincipal(Screen):
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(None, 1),
-            width=dp(70)
+            width=dp(90)
         )
 
+        # ── Barra de vida con marco decorativo superpuesto ───────────────────
+        # Capas (de fondo a frente):
+        #   1. canvas.before: fondo gris + relleno de color (ocupan todo)
+        #   2. self.marcoVida (Image): marco decorativo común
+        #   3. self.lblVida (Label): texto "X / Y" centrado
         contenedorVida = BoxLayout(
             orientation='vertical',
             size_hint=(1, 1),
-            padding=[0, dp(6)]
+            padding=[0, dp(2)]
         )
-        self.barraVida = Widget(size_hint=(1, 1))
+        self.barraVida = FloatLayout(size_hint=(1, 1))
+
+        # Capa 2 — marco decorativo (más grande que el contenedor para envolver la barra)
+        self.marcoVida = Image(
+            source=MARCO_VIDA,
+            allow_stretch=True,
+            keep_ratio=False,
+            mipmap=True,
+            pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            size_hint=(1.15, 1.6)
+        )
+        self.barraVida.add_widget(self.marcoVida)
+
+        # Capa 3 — texto de vida ("X / Y") centrado
+        self.lblVida = Label(
+            text='—',
+            font_size=dp(14),
+            bold=True,
+            color=BLANCO,
+            pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            size_hint=(None, None)
+        )
+        self.lblVida.bind(texture_size=lambda lbl, ts: setattr(lbl, 'size', ts))
+        self.barraVida.add_widget(self.lblVida)
+
         contenedorVida.add_widget(self.barraVida)
         self.barraVida.bind(pos=self._dibujarBarraVida, size=self._dibujarBarraVida)
 
         filaMonedas = BoxLayout(
             orientation='horizontal',
             size_hint=(None, 1),
-            width=dp(55),
+            width=dp(70),
             spacing=dp(4)
         )
         self.etiquetaMonedas = Label(
             text='0',
-            font_size=dp(13),
+            font_size=dp(15),
             bold=True,
             color=COLOR_GUARDIANES,
             size_hint=(1, 1),
@@ -102,7 +199,7 @@ class PantallaPrincipal(Screen):
         filaMonedas.add_widget(Image(
             source=ICONO_MONEDA,
             size_hint=(None, 1),
-            width=dp(22),
+            width=dp(28),
             allow_stretch=True,
             keep_ratio=True,
             mipmap=True
@@ -112,162 +209,102 @@ class PantallaPrincipal(Screen):
         barraTop.add_widget(contenedorVida)
         barraTop.add_widget(filaMonedas)
 
-        # ── SPLASH ART (42%) ──────────────────────────────────────────────────
+        # ── SPLASH ART (38%) ──────────────────────────────────────────────────
+        # fit_mode='cover': la imagen mantiene proporción y rellena todo el área
+        # recortando lo que sobre por los bordes (estilo splash art de gacha).
         self.imagenPersonaje = Image(
             source=SPRITE_GUARDIAN,
-            allow_stretch=True,
-            keep_ratio=True,
-            size_hint=(1, 0.42)
+            fit_mode='cover',
+            mipmap=True,
+            size_hint=(1, 0.38)
         )
 
-        # ── PILA PAPIRO + RUNAS/ARMA (38%) ───────────────────────────────────
-        filaCentral = BoxLayout(
-            orientation='vertical',
-            size_hint=(1, 0.38),
-            spacing=dp(4),
-            padding=[dp(10), dp(6)]
-        )
-
-        # ── Papiro ────────────────────────────────────────────────────────────
-        papiro = BoxLayout(
-            orientation='vertical',
-            size_hint=(1, 0.35),
-            padding=[dp(6), dp(4)],
-            spacing=dp(4)
-        )
-        with papiro.canvas.before:
-            Color(1, 1, 1, 1)
-            self._papiroRect = Rectangle(
-                source=PLACEHOLDER,
-                pos=papiro.pos,
-                size=papiro.size
-            )
-        papiro.bind(
-            pos=lambda *a: setattr(self._papiroRect, 'pos', papiro.pos),
-            size=lambda *a: setattr(self._papiroRect, 'size', papiro.size)
-        )
-
-        filasStats = BoxLayout(orientation='horizontal', size_hint=(1, 1), spacing=dp(4))
-        self.lblAtk   = _icono_label(ICONO_ATK, '—')
-        self.lblDef   = _icono_label(ICONO_DEF, '—')
-        self.lblMagia = _icono_label(ICONO_MAG, '—')
-        self.lblDes   = _icono_label(ICONO_DES, '—')
-        filasStats.add_widget(self.lblAtk)
-        filasStats.add_widget(self.lblDef)
-        filasStats.add_widget(self.lblMagia)
-        filasStats.add_widget(self.lblDes)
-
-        self.lblPociones = Label(
-            text='5/5',
-            font_size=dp(11),
-            color=BLANCO,
-            halign='left',
-            valign='middle',
-            size_hint=(None, 1),
-            width=dp(30)
-        )
-        self.lblPociones.bind(size=self.lblPociones.setter('text_size'))
-
-        filaPociones = BoxLayout(
+        # ── PANEL CENTRAL UNIFICADO (30%) ─────────────────────────────────────
+        # Reemplaza al antiguo papiro + bloque runas. Un único panel con:
+        #   - Mitad izquierda (50%): 5 stats apiladas (icono + etiqueta)
+        #   - Mitad derecha (50%): runas (50%) + arma (50%)
+        panelCentral = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, None),
-            height=dp(20),
-            spacing=dp(4)
-        )
-        filaPociones.add_widget(Widget(size_hint=(1, 1)))
-        filaPociones.add_widget(Image(
-            source=ICONO_POCION,
-            size_hint=(None, 1),
-            width=dp(16),
-            allow_stretch=True,
-            keep_ratio=True,
-            mipmap=True
-        ))
-        filaPociones.add_widget(self.lblPociones)
-        filaPociones.add_widget(Widget(size_hint=(1, 1)))
-
-        papiro.add_widget(Widget(size_hint=(1, 1)))
-        papiro.add_widget(filasStats)
-        papiro.add_widget(filaPociones)
-        papiro.add_widget(Widget(size_hint=(1, 1)))
-
-        # ── Bloque runas/arma ─────────────────────────────────────────────────
-        bloqueRunas = BoxLayout(
-            orientation='horizontal',
-            size_hint=(1, 0.65),
-            padding=[dp(16), dp(10)],
+            size_hint=(1, 0.30),
+            padding=[dp(10), dp(8)],
             spacing=dp(8)
         )
-        with bloqueRunas.canvas.before:
+        with panelCentral.canvas.before:
             Color(1, 1, 1, 1)
             self._fondoRunaRect = Rectangle(
                 source=PLACEHOLDER,
-                pos=bloqueRunas.pos,
-                size=bloqueRunas.size
+                pos=panelCentral.pos,
+                size=panelCentral.size
             )
-        bloqueRunas.bind(
-            pos=lambda *a: setattr(self._fondoRunaRect, 'pos', bloqueRunas.pos),
-            size=lambda *a: setattr(self._fondoRunaRect, 'size', bloqueRunas.size)
+        panelCentral.bind(
+            pos=lambda *a: setattr(self._fondoRunaRect, 'pos', panelCentral.pos),
+            size=lambda *a: setattr(self._fondoRunaRect, 'size', panelCentral.size)
         )
 
-        # Lado izquierdo: runas
-        ladoRunas = BoxLayout(orientation='vertical', size_hint=(0.55, 1), spacing=dp(6),
-                              padding=[0, dp(8)])
+        # ── Mitad izquierda: estadísticas (5 filas) ──────────────────────────
+        ladoStats = BoxLayout(
+            orientation='vertical',
+            size_hint=(0.5, 1),
+            spacing=dp(2),
+            padding=[dp(4), dp(2)]
+        )
 
-        filaRuna1 = BoxLayout(orientation='horizontal', size_hint=(1, 1), spacing=dp(6))
-        self.iconoRuna1 = Image(source=PLACEHOLDER, size_hint=(None, 1), width=dp(28), allow_stretch=True, keep_ratio=True, mipmap=True)
-        bloqueRuna1 = BoxLayout(orientation='vertical', size_hint=(1, 1))
-        self.lblNombreRuna1 = Label(text='—', font_size=dp(9), color=BLANCO, bold=True, halign='left', valign='middle', size_hint=(1, 1))
-        self.lblNombreRuna1.bind(size=self.lblNombreRuna1.setter('text_size'))
-        self.lblStatRuna1 = Label(text='', font_size=dp(8), color=COLOR_GUARDIANES, halign='left', valign='middle', size_hint=(1, 1))
-        self.lblStatRuna1.bind(size=self.lblStatRuna1.setter('text_size'))
-        bloqueRuna1.add_widget(self.lblNombreRuna1)
-        bloqueRuna1.add_widget(self.lblStatRuna1)
-        filaRuna1.add_widget(self.iconoRuna1)
-        filaRuna1.add_widget(bloqueRuna1)
+        filaAtk, self.lblAtk      = _stat_fila(ICONO_ATK, 'ATAQUE')
+        filaDef, self.lblDef      = _stat_fila(ICONO_DEF, 'DEFENSA')
+        filaMag, self.lblMagia    = _stat_fila(ICONO_MAG, 'MAGIA')
+        filaDes, self.lblDes      = _stat_fila(ICONO_DES, 'DESTREZA')
+        filaPoc, self.lblPociones = _stat_fila(ICONO_POCION, 'POCIONES')
 
-        filaRuna2 = BoxLayout(orientation='horizontal', size_hint=(1, 1), spacing=dp(6))
-        self.iconoRuna2 = Image(source=PLACEHOLDER, size_hint=(None, 1), width=dp(28), allow_stretch=True, keep_ratio=True, mipmap=True)
-        bloqueRuna2 = BoxLayout(orientation='vertical', size_hint=(1, 1))
-        self.lblNombreRuna2 = Label(text='—', font_size=dp(9), color=BLANCO, bold=True, halign='left', valign='middle', size_hint=(1, 1))
-        self.lblNombreRuna2.bind(size=self.lblNombreRuna2.setter('text_size'))
-        self.lblStatRuna2 = Label(text='', font_size=dp(8), color=COLOR_GUARDIANES, halign='left', valign='middle', size_hint=(1, 1))
-        self.lblStatRuna2.bind(size=self.lblStatRuna2.setter('text_size'))
-        bloqueRuna2.add_widget(self.lblNombreRuna2)
-        bloqueRuna2.add_widget(self.lblStatRuna2)
-        filaRuna2.add_widget(self.iconoRuna2)
-        filaRuna2.add_widget(bloqueRuna2)
+        ladoStats.add_widget(filaAtk)
+        ladoStats.add_widget(filaDef)
+        ladoStats.add_widget(filaMag)
+        ladoStats.add_widget(filaDes)
+        ladoStats.add_widget(filaPoc)
 
-        ladoRunas.add_widget(filaRuna1)
-        ladoRunas.add_widget(filaRuna2)
+        # ── Mitad derecha: equipo (runas arriba, arma abajo) ─────────────────
+        ladoEquipo = BoxLayout(
+            orientation='vertical',
+            size_hint=(0.5, 1),
+            spacing=dp(4),
+            padding=[dp(2), dp(2)]
+        )
 
-        # Lado derecho: arma
-        ladoArma = BoxLayout(orientation='vertical', size_hint=(0.45, 1), spacing=dp(4),
-                             padding=[0, dp(8)])
-        self.iconoArma = Image(source=PLACEHOLDER, size_hint=(1, 1), allow_stretch=True, keep_ratio=True, mipmap=True)
-        self.lblNombreArma = Label(text='—', font_size=dp(9), color=BLANCO, bold=True, halign='center', valign='middle', size_hint=(1, None), height=dp(14))
-        self.lblNombreArma.bind(size=self.lblNombreArma.setter('text_size'))
-        self.lblStatArma = Label(text='', font_size=dp(8), color=COLOR_GUARDIANES, halign='center', valign='middle', size_hint=(1, None), height=dp(12))
-        self.lblStatArma.bind(size=self.lblStatArma.setter('text_size'))
-        ladoArma.add_widget(self.iconoArma)
-        ladoArma.add_widget(self.lblNombreArma)
-        ladoArma.add_widget(self.lblStatArma)
+        bloqueRunas = BoxLayout(
+            orientation='vertical',
+            size_hint=(1, 0.5),
+            spacing=dp(2)
+        )
+        filaRuna1, self.iconoRuna1, self.lblNombreRuna1, self.lblStatRuna1 = \
+            _equipo_fila(PLACEHOLDER, dp(40))
+        filaRuna2, self.iconoRuna2, self.lblNombreRuna2, self.lblStatRuna2 = \
+            _equipo_fila(PLACEHOLDER, dp(40))
+        bloqueRunas.add_widget(filaRuna1)
+        bloqueRunas.add_widget(filaRuna2)
 
-        bloqueRunas.add_widget(ladoRunas)
-        bloqueRunas.add_widget(ladoArma)
+        bloqueArma = BoxLayout(
+            orientation='vertical',
+            size_hint=(1, 0.5),
+            spacing=dp(0)
+        )
+        filaArma, self.iconoArma, self.lblNombreArma, self.lblStatArma = \
+            _equipo_fila(PLACEHOLDER, dp(50))
+        bloqueArma.add_widget(filaArma)
 
-        filaCentral.add_widget(papiro)
-        filaCentral.add_widget(bloqueRunas)
+        ladoEquipo.add_widget(bloqueRunas)
+        ladoEquipo.add_widget(bloqueArma)
 
-        # ── BARRA NAVEGACIÓN (10%) ────────────────────────────────────────────
+        panelCentral.add_widget(ladoStats)
+        panelCentral.add_widget(ladoEquipo)
+
+        # ── BARRA NAVEGACIÓN (18%) ────────────────────────────────────────────
         barraNav = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, 0.10),
+            size_hint=(1, 0.18),
             padding=[dp(8), dp(8)],
             spacing=dp(8)
         )
         with barraNav.canvas.before:
-            Color(0, 0, 0, 0)
+            Color(0, 0, 0, 0.55)
             self._navRect = Rectangle(pos=barraNav.pos, size=barraNav.size)
         barraNav.bind(
             pos=lambda *a: setattr(self._navRect, 'pos', barraNav.pos),
@@ -279,7 +316,7 @@ class PantallaPrincipal(Screen):
             background_down=ICONO_GACHA,
             background_color=(1, 1, 1, 1),
             size_hint=(None, 1),
-            width=dp(60),
+            width=dp(100),
             border=(0, 0, 0, 0),
             mipmap=True
         )
@@ -300,7 +337,7 @@ class PantallaPrincipal(Screen):
             background_down=ICONO_INVENTARIO,
             background_color=(1, 1, 1, 1),
             size_hint=(None, 1),
-            width=dp(60),
+            width=dp(100),
             border=(0, 0, 0, 0),
             mipmap=True
         )
@@ -312,22 +349,40 @@ class PantallaPrincipal(Screen):
 
         raiz.add_widget(barraTop)
         raiz.add_widget(self.imagenPersonaje)
-        raiz.add_widget(filaCentral)
+        raiz.add_widget(panelCentral)
         raiz.add_widget(barraNav)
         self.add_widget(raiz)
 
         self._pociones_actuales = 5
+        self._porcentaje_vida = 1.0
 
     # ── Canvas helpers ────────────────────────────────────────────────────────
 
     def _dibujarBarraVida(self, *args):
         w = self.barraVida
-        w.canvas.clear()
-        with w.canvas:
+        pct = max(0.0, min(1.0, self._porcentaje_vida))
+
+        if pct > 0.6:
+            color_barra = COLOR_VIDA
+        elif pct > 0.3:
+            color_barra = COLOR_VIDA_MEDIA
+        else:
+            color_barra = COLOR_VIDA_BAJA
+
+        # Calcular tamaño y posición de la barra (centrada en el contenedor)
+        barra_w = w.width  * BARRA_VIDA_ANCHO_PCT
+        barra_h = w.height * BARRA_VIDA_ALTO_PCT
+        barra_x = w.x + (w.width  - barra_w) / 2
+        barra_y = w.y + (w.height - barra_h) / 2
+
+        w.canvas.before.clear()
+        with w.canvas.before:
+            # Fondo oscuro
             Color(0.2, 0.2, 0.2, 0.8)
-            RoundedRectangle(pos=w.pos, size=w.size, radius=[dp(4)])
-            Color(*COLOR_VIDA)
-            RoundedRectangle(pos=w.pos, size=(w.width * 0.8, w.height), radius=[dp(4)])
+            RoundedRectangle(pos=(barra_x, barra_y), size=(barra_w, barra_h), radius=[dp(4)])
+            # Relleno proporcional al porcentaje
+            Color(*color_barra)
+            RoundedRectangle(pos=(barra_x, barra_y), size=(barra_w * pct, barra_h), radius=[dp(4)])
 
     # ── Datos ─────────────────────────────────────────────────────────────────
 
@@ -344,11 +399,9 @@ class PantallaPrincipal(Screen):
         faccion = self.gm.faccion or ''
         self._bg_rect.source = FONDO_HOME
         if faccion == 'anomalia':
-            self._papiroRect.source    = PAPIRO_ANOMALIA
             self.logoFaccion.source    = LOGO_ANOMALIA
             self._fondoRunaRect.source = FONDO_RUNA_ANOMALIA
         else:
-            self._papiroRect.source    = PAPIRO_GUARDIAN
             self.logoFaccion.source    = LOGO_GUARDIAN
             self._fondoRunaRect.source = FONDO_RUNA_GUARDIAN
         self.logoFaccion.reload()
@@ -357,11 +410,13 @@ class PantallaPrincipal(Screen):
         self.imagenPersonaje.source = sprite
         self.imagenPersonaje.reload()
 
-        self.lblAtk.children[1].text   = str(info.get('atk_base', '—'))
-        self.lblDef.children[1].text   = str(info.get('defensa_base', '—'))
-        self.lblMagia.children[1].text = str(info.get('magia_base', '—'))
-        self.lblDes.children[1].text   = str(info.get('destreza_base', '—'))
+        # Stats con etiqueta + valor
+        self.lblAtk.text   = f"ATAQUE: {info.get('atk_base', '—')}"
+        self.lblDef.text   = f"DEFENSA: {info.get('defensa_base', '—')}"
+        self.lblMagia.text = f"MAGIA: {info.get('magia_base', '—')}"
+        self.lblDes.text   = f"DESTREZA: {info.get('destreza_base', '—')}"
 
+        # Equipo
         from database.repositories import inventario_repo, arma_repo, runa_repo
         equipo     = info.get('equipo', [])
         inv_por_id = {item['id']: item for item in inventario_repo.get_inventario()}
@@ -396,23 +451,33 @@ class PantallaPrincipal(Screen):
                     self.lblNombreRuna2.text = datos.get('nombre', '—')
                     self.lblStatRuna2.text   = f"+{datos.get('bonus_atk',0)}ATK +{datos.get('bonus_magia',0)}MAG +{datos.get('bonus_def',0)}DEF"
 
+        # Pociones (formato "POCIONES: X/5") y monedas
         recursos = self.gm.get_recursos()
         self._pociones_actuales = recursos.get('pociones', 5)
-        self.lblPociones.text = f"{self._pociones_actuales}/5"
+        self.lblPociones.text   = f"POCIONES: {self._pociones_actuales}/5"
 
         monedas = recursos.get('monedas', 0)
         self.etiquetaMonedas.text = str(monedas)
+
+        # Vida del jugador (barra dinámica)
+        vida_actual = recursos.get('vida_actual', 0) or 0
+        vida_max    = recursos.get('vida_max', 0)    or 0
+        if vida_max <= 0:
+            vida_max    = info.get('pv_base', 1) or 1
+            vida_actual = vida_max
+
+        self._porcentaje_vida = vida_actual / vida_max if vida_max > 0 else 0.0
+        self.lblVida.text = f"{vida_actual} / {vida_max}"
+        self._dibujarBarraVida()
 
     def cargarPersonaje(self, nombreFaccion, rutaSprite, colorAcento):
         self.imagenPersonaje.source = rutaSprite or PLACEHOLDER
         self.imagenPersonaje.reload()
         self._bg_rect.source = FONDO_HOME
         if nombreFaccion == NOMBRE_ANOMALIA:
-            self._papiroRect.source    = PAPIRO_ANOMALIA
             self.logoFaccion.source    = LOGO_ANOMALIA
             self._fondoRunaRect.source = FONDO_RUNA_ANOMALIA
         else:
-            self._papiroRect.source    = PAPIRO_GUARDIAN
             self.logoFaccion.source    = LOGO_GUARDIAN
             self._fondoRunaRect.source = FONDO_RUNA_GUARDIAN
         self.logoFaccion.reload()

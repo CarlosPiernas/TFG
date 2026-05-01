@@ -158,3 +158,54 @@ class RecursosRepo:
             return True
         finally:
             conn.close()
+
+    # ═══════════════════════════════════
+    # VIDA DEL JUGADOR (persistente entre nodos)
+    # ═══════════════════════════════════
+
+    def get_vida(self) -> dict:
+        # Devuelve la vida actual y máxima del jugador.
+        # Si la fila no existe o las columnas son nulas, devuelve {0, 0}.
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT vida_actual, vida_max FROM recursos_jugador WHERE id = 1"
+            ).fetchone()
+            if row is None:
+                return {"vida_actual": 0, "vida_max": 0}
+            return {
+                "vida_actual": row["vida_actual"] or 0,
+                "vida_max":    row["vida_max"]    or 0,
+            }
+        finally:
+            conn.close()
+
+    def set_vida(self, vida_actual: int, vida_max: int):
+        # Guarda la vida actual y máxima del jugador. La vida actual queda
+        # acotada al rango [0, vida_max] para evitar valores incoherentes.
+        if vida_max < 0:
+            vida_max = 0
+        if vida_actual < 0:
+            vida_actual = 0
+        if vida_actual > vida_max:
+            vida_actual = vida_max
+        conn = get_connection()
+        try:
+            conn.execute(
+                "UPDATE recursos_jugador SET vida_actual = ?, vida_max = ? WHERE id = 1",
+                (vida_actual, vida_max)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def restaurar_vida(self):
+        # Restaura la vida actual al máximo. Usado al consumir una poción.
+        conn = get_connection()
+        try:
+            conn.execute(
+                "UPDATE recursos_jugador SET vida_actual = vida_max WHERE id = 1"
+            )
+            conn.commit()
+        finally:
+            conn.close()
