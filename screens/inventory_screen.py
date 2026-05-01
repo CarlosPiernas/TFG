@@ -289,7 +289,7 @@ class PantallaInventario(Screen):
         # Botón EQUIPAR (debajo de stats)
         self.botonEquipar = BotonConMarco(
             texto='EQUIPAR',
-            marco_path=BOTON_FORJAR,  # reutilizamos el marco rúnico para que destaque
+            marco_path=MARCO_BOTON,  # reutilizamos el marco rúnico para que destaque
             on_press_callback=self.confirmarSeleccion,
             size_hint=(1, 0.35)
         )
@@ -520,9 +520,18 @@ class PantallaInventario(Screen):
 
     def seleccionarItem(self, item: dict):
         self.itemSeleccionado = item
-
-        # Preview: por ahora placeholder porque no tenemos iconos individuales
-        self.imagenPreview.source = item.get('sprite_id') or PLACEHOLDER
+     
+        if self.categoriaActual == 'personajes':
+            from database.repositories.personaje_repo import get_sprite_path
+            source = get_sprite_path(
+                item.get('faccion', ''),
+                item.get('clase', ''),
+                item.get('rareza', ''),
+                'splash'
+            )
+        else:
+            source = item.get('sprite_id') or PLACEHOLDER
+        self.imagenPreview.source = source
         self.imagenPreview.opacity = 1
         self.imagenPreview.reload()
 

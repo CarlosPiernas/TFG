@@ -330,7 +330,7 @@ class PantallaForja(Screen):
         # Botón FORJAR — con marco decorativo BotonForjar.png + texto "FORJAR"
         botonForjar = BotonConMarco(
             texto='FORJAR',
-            marco_path=BOTON_FORJAR,
+            marco_path=MARCO_BOTON,
             on_press_callback=self.intentarForja,
             size_hint=(0.5, 1)
         )
