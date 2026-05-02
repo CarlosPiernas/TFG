@@ -75,6 +75,15 @@ BOTON_OBJETOS             = 'assets/logos/BotonObjetos.png'
 SPRITE_ANOMALIA = 'assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png'
 SPRITE_GUARDIAN = 'assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png'
 
+# Tienda
+FONDO_TIENDA        = 'assets/fondos/Fondo_Tienda.png'
+TITULO_TIENDA       = 'assets/fondos/Titulo_Tienda.png'
+BOTON_COMPRAR       = 'assets/fondos/Boton_Comprar.png'
+FRAGMENTO_ROJO      = 'assets/fondos/Fragmento_Rojo.png'
+FRAGMENTO_AZUL      = 'assets/fondos/Fragmento_Azul.png'
+ICONO_TRANSMUTADOR  = 'assets/logos/CargaTransmutacion.png'
+LOGO_POCION           = 'assets/fondos/Logo_Pocion.png'
+
 # Gacha
 FONDO_GACHA_ARMAS      = 'assets/fondos/Fondo_Gacha_Armas.png'
 FONDO_GACHA_ANOMALIA   = 'assets/fondos/Fondo_Gacha_Anomalia.png'
