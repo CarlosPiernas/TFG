@@ -561,3 +561,26 @@ class GameManager:
                 f"{nombre_runa_1} + {nombre_runa_2} → RUNA_{nombre_resultado}"
             ),
         }
+    # ═══════════════════════════════════
+    # TIENDA
+    # ═══════════════════════════════════
+
+    def comprar_pocion(self) -> dict:
+        from database.repositories.tienda_repo import comprar_pocion
+        return comprar_pocion()
+
+    def comprar_ticket_personaje(self, con_fragmentos=False) -> dict:
+        from database.repositories.tienda_repo import comprar_ticket_personaje
+        return comprar_ticket_personaje(con_fragmentos)
+
+    def comprar_ticket_arma(self, con_fragmentos=False) -> dict:
+        from database.repositories.tienda_repo import comprar_ticket_arma
+        return comprar_ticket_arma(con_fragmentos)
+
+    def comprar_transmutador(self) -> dict:
+        from database.repositories.tienda_repo import comprar_transmutador
+        return comprar_transmutador()
+
+    def get_recursos_tienda(self) -> dict:
+        from database.repositories.tienda_repo import get_recursos_tienda
+        return get_recursos_tienda()
