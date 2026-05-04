@@ -66,6 +66,7 @@ class PantallaGacha(Screen):
         )
         self._frame_actual      = 0
         self._anim_event        = None
+        self._cache_texturas    = {}   # path -> CoreImage texture
 
         # ── TÍTULO GACHAPÓN ───────────────────────────────────────────────────
         raiz.add_widget(Image(
