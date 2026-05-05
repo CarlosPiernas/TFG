@@ -17,7 +17,9 @@ from config import (
     FONDO_GACHA_ARMAS, FONDO_GACHA_ANOMALIA, FONDO_GACHA_GUARDIANES,
     TITULO_GACHA, TITULO_PERSONAJES, TITULO_ARMAS,
     BOTON_INVOCAR, BOTON_FORJAR, BOTON_TIENDA, BOTON_VOLVER,
-    TICKET_PERSONAJES, TICKET_ARMAS
+    TICKET_PERSONAJES, TICKET_ARMAS,
+    icono_arma, nombre_arma,
+    icono_personaje, nombre_personaje,
 )
 
 COLOR_RAREZA = {
@@ -47,19 +49,19 @@ class PantallaGacha(Screen):
         raiz.add_widget(self.fondo)
 
         self._frames_armas = sorted(
-            [f'assets/fondos/fondo_gacha_armas/{f}' 
+            [f'assets/fondos/fondo_gacha_armas/{f}'
              for f in os.listdir('assets/fondos/fondo_gacha_armas')
              if f.endswith('.png')],
             key=lambda x: int(x.split('_')[-1].replace('.png', ''))
         )
         self._frames_personajes = sorted(
-            [f'assets/fondos/fondo_gacha_anomalia/{f}' 
+            [f'assets/fondos/fondo_gacha_anomalia/{f}'
              for f in os.listdir('assets/fondos/fondo_gacha_anomalia')
              if f.endswith('.png')],
             key=lambda x: int(x.split('_')[-1].replace('.png', ''))
         )
         self._frames_guardianes = sorted(
-            [f'assets/fondos/fondo_gacha_guardianes/{f}' 
+            [f'assets/fondos/fondo_gacha_guardianes/{f}'
              for f in os.listdir('assets/fondos/fondo_gacha_guardianes')
              if f.endswith('.png')],
             key=lambda x: int(x.split('_')[-1].replace('.png', ''))
@@ -291,7 +293,7 @@ class PantallaGacha(Screen):
         self._refrescar_pity()
         self._precargar_frames()
         self._iniciar_animacion()
-    
+
     def _precargar_frames(self):
         import threading
         from kivy.core.image import Image as CoreImage
@@ -382,24 +384,45 @@ class PantallaGacha(Screen):
             self._mostrar_popup('Error', resultado['error'], (0.7, 0.1, 0.1, 1))
             return
 
-        nombre  = resultado.get('nombre', '?')
-        rareza  = resultado.get('rareza', 'B')
-        es_frag = resultado.get('fragmento', False)
+        # El nombre viene anidado en resultado["item"]["nombre"], no en el nivel superior.
+        item      = resultado.get('item') or {}
+        nombre_db = item.get('nombre', '?')
+        rareza    = resultado.get('rareza') or item.get('rareza', 'B')
+        es_frag   = resultado.get('fragmento') is not None
+
+        # Resuelve icono y nombre legible según el banner.
+        # Tanto si es nuevo como si es fragmento, mostramos el icono del item.
+        if self.banner_actual == 'armas':
+            icono_path     = icono_arma(nombre_db)
+            nombre_display = nombre_arma(nombre_db)
+            tipo_label     = 'arma'
+        else:
+            icono_path     = icono_personaje(nombre_db)
+            nombre_display = nombre_personaje(nombre_db)
+            tipo_label     = 'personaje'
 
         if es_frag:
-            titulo = f'✦ FRAGMENTO {rareza} ✦'
-            cuerpo = f'{nombre}\n\n(Ya lo tenías — recibes fragmento)'
+            titulo = f'¡Fragmento {rareza}!'
+            cuerpo = (
+                f'Has recibido un fragmento de [b]{nombre_display}[/b]\n'
+                f'porque ya tenías este {tipo_label}.'
+            )
         else:
-            titulo = f'✦ {rareza} ✦'
-            cuerpo = nombre
+            titulo = f'¡{rareza}!'
+            cuerpo = nombre_display
 
-        self._mostrar_popup(titulo, cuerpo, COLOR_RAREZA.get(rareza, BLANCO))
+        self._mostrar_popup(
+            titulo,
+            cuerpo,
+            COLOR_RAREZA.get(rareza, BLANCO),
+            icono_path=icono_path,
+        )
         self._refrescar_recursos()
         self._refrescar_pity()
 
-    def _mostrar_popup(self, titulo, cuerpo, color_titulo):
+    def _mostrar_popup(self, titulo, cuerpo, color_titulo, icono_path=None):
         modal = ModalView(
-            size_hint=(0.8, 0.45),
+            size_hint=(0.8, 0.6 if icono_path else 0.45),
             auto_dismiss=True,
             background_color=(0, 0, 0, 0)
         )
@@ -424,11 +447,24 @@ class PantallaGacha(Screen):
         )
         lbl_titulo.bind(size=lbl_titulo.setter('text_size'))
 
+        # Icono opcional (personajes o armas, tanto en nuevo como en fragmento)
+        icono_widget = None
+        if icono_path:
+            icono_widget = Image(
+                source=icono_path,
+                allow_stretch=True,
+                keep_ratio=True,
+                mipmap=True,
+                size_hint=(1, 1),
+            )
+
         lbl_cuerpo = Label(
             text=cuerpo,
             font_size=dp(16),
             color=BLANCO,
-            size_hint=(1, 1),
+            markup=True,
+            size_hint=(1, None if icono_path else 1),
+            height=dp(60) if icono_path else 0,
             halign='center',
             valign='middle'
         )
@@ -447,6 +483,8 @@ class PantallaGacha(Screen):
         btn_cerrar.bind(on_press=lambda _: modal.dismiss())
 
         contenedor.add_widget(lbl_titulo)
+        if icono_widget is not None:
+            contenedor.add_widget(icono_widget)
         contenedor.add_widget(lbl_cuerpo)
         contenedor.add_widget(btn_cerrar)
         modal.add_widget(contenedor)
