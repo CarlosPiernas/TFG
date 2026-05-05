@@ -28,15 +28,16 @@ def initialize_db():
             CREATE TABLE IF NOT EXISTS personajes_catalogo (
                 id              INTEGER PRIMARY KEY,
                 nombre          TEXT    NOT NULL,
-                faccion         TEXT    NOT NULL,   
-                clase           TEXT    NOT NULL,   
-                rareza          TEXT    NOT NULL,   
+                faccion         TEXT    NOT NULL,
+                clase           TEXT    NOT NULL,
+                rareza          TEXT    NOT NULL,
                 atk_base        INTEGER NOT NULL DEFAULT 0,
                 defensa_base    INTEGER NOT NULL DEFAULT 0,
                 magia_base      INTEGER NOT NULL DEFAULT 0,
                 pv_base         INTEGER NOT NULL DEFAULT 0,
                 destreza_base   INTEGER NOT NULL DEFAULT 0,
-                sprite_id       TEXT                -- nombre del sprite, ej: 'goldship.png'
+                sprite_id       TEXT,                            -- splash grande del personaje
+                icono           TEXT                             -- icono circular para tarjetas/gacha
             )
         """)
 
@@ -45,14 +46,15 @@ def initialize_db():
             CREATE TABLE IF NOT EXISTS armas_catalogo (
                 id                INTEGER PRIMARY KEY,
                 nombre            TEXT    NOT NULL,
-                rareza            TEXT    NOT NULL,   
+                rareza            TEXT    NOT NULL,
                 bonus_atk         INTEGER NOT NULL DEFAULT 0,
                 bonus_magia       INTEGER NOT NULL DEFAULT 0,
                 bonus_pv          INTEGER NOT NULL DEFAULT 0,
-                bonus_def         INTEGER NOT NULL DEFAULT 0,   -- usado por armas S (ej: Mandoble_Cronos +55 DEF)
+                bonus_def         INTEGER NOT NULL DEFAULT 0,   -- usado por armas S (ej: Hambre Voraz +55 DEF)
                 bonus_destreza    INTEGER NOT NULL DEFAULT 0,
-                personaje_s_id    INTEGER,            
-                efecto_especial   TEXT,               
+                personaje_s_id    INTEGER,
+                efecto_especial   TEXT,
+                icono             TEXT,                          -- ruta al PNG del icono del arma
                 FOREIGN KEY (personaje_s_id) REFERENCES personajes_catalogo(id)
             )
         """)
@@ -62,13 +64,13 @@ def initialize_db():
             CREATE TABLE IF NOT EXISTS runas_catalogo (
                 id                INTEGER PRIMARY KEY,
                 nombre            TEXT    NOT NULL,
-                rareza            TEXT    NOT NULL, 
+                rareza            TEXT    NOT NULL,
                 bonus_atk         INTEGER NOT NULL DEFAULT 0,
                 bonus_magia       INTEGER NOT NULL DEFAULT 0,
                 bonus_pv          INTEGER NOT NULL DEFAULT 0,
                 bonus_def         INTEGER NOT NULL DEFAULT 0,   -- usado por RUNA_DEFENSA, RUNA_GUARDIAN, etc.
                 bonus_destreza    INTEGER NOT NULL DEFAULT 0,
-                efecto_especial   TEXT                
+                efecto_especial   TEXT
             )
         """)
 
@@ -97,37 +99,36 @@ def initialize_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS progreso_mapa (
                 nodo_id     INTEGER PRIMARY KEY,
-                estado      TEXT    NOT NULL DEFAULT 'bloqueado',  -- 'bloqueado' | 'disponible' | 'completado'
-                estrellas   INTEGER NOT NULL DEFAULT 0,            -- 0, 1, 2 o 3
+                estado      TEXT    NOT NULL DEFAULT 'bloqueado',
+                estrellas   INTEGER NOT NULL DEFAULT 0,
                 intentos    INTEGER NOT NULL DEFAULT 0
             )
         """)
 
-        #Contadores de pity — separados por jugador y banner
+        #Contadores de pity
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS contadores_pity (
-                jugador_id  INTEGER NOT NULL,          -- siempre 1 por ahora, preparado para escalar
-                banner      TEXT    NOT NULL,          -- 'personajes' | 'armas'
+                jugador_id  INTEGER NOT NULL,
+                banner      TEXT    NOT NULL,
                 contador    INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (jugador_id, banner)
             )
         """)
 
         #Recursos del jugador
-        #Solo puede existir una fila (el jugador). El check lo comprueba.
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recursos_jugador (
                 id                  INTEGER PRIMARY KEY CHECK (id = 1),
                 faccion             TEXT,
                 tickets_personaje   INTEGER NOT NULL DEFAULT 0,
                 tickets_arma        INTEGER NOT NULL DEFAULT 0,
-                monedas      INTEGER NOT NULL DEFAULT 0,
+                monedas             INTEGER NOT NULL DEFAULT 0,
                 pociones            INTEGER NOT NULL DEFAULT 5,
-                pociones_max        INTEGER NOT NULL DEFAULT 5,    -- para saber si necesita regenerar o no
-                ultima_regen        TEXT,                          -- para calcular próxima regeneración
-                transmutadores      INTEGER NOT NULL DEFAULT 0,  --transmutadores para la fusión de runas
-                fragmentos_rojos    INTEGER NOT NULL DEFAULT 0,   -- por personaje duplicado en gacha
-                fragmentos_azules   INTEGER NOT NULL DEFAULT 0,    -- por arma duplicada en gacha
+                pociones_max        INTEGER NOT NULL DEFAULT 5,
+                ultima_regen        TEXT,
+                transmutadores      INTEGER NOT NULL DEFAULT 0,
+                fragmentos_rojos    INTEGER NOT NULL DEFAULT 0,
+                fragmentos_azules   INTEGER NOT NULL DEFAULT 0,
                 vida_actual         INTEGER NOT NULL DEFAULT 0,
                 vida_max            INTEGER NOT NULL DEFAULT 0
             )
@@ -138,12 +139,12 @@ def initialize_db():
             CREATE TABLE IF NOT EXISTS historial_gacha (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 jugador_id  INTEGER NOT NULL,
-                banner      TEXT    NOT NULL,  -- 'personajes' | 'armas'
-                tipo        TEXT    NOT NULL,  -- 'personaje' | 'arma'
-                catalogo_id INTEGER NOT NULL,  -- id del ítem obtenido
-                rareza      TEXT    NOT NULL,  -- 'B' | 'A' | 'S'
-                es_nuevo    INTEGER NOT NULL,  -- 1 nuevo | 0 duplicado
-                fecha       TEXT    NOT NULL   -- timestamp ISO
+                banner      TEXT    NOT NULL,
+                tipo        TEXT    NOT NULL,
+                catalogo_id INTEGER NOT NULL,
+                rareza      TEXT    NOT NULL,
+                es_nuevo    INTEGER NOT NULL,
+                fecha       TEXT    NOT NULL
             )
         """)
 
@@ -159,7 +160,6 @@ def initialize_db():
 if __name__ == "__main__":
     initialize_db()
     print(f"Archivo creado en: {os.path.abspath(ruta_bd)}")
-    #Verificar que las tablas existen
     conn = get_connection()
     tablas = conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
