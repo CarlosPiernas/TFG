@@ -12,7 +12,6 @@ from kivy.animation import Animation
 from kivy.uix.image import Image
 from config import (
     COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO, PANEL_MEDIO,
-    SPRITE_ANOMALIA, SPRITE_GUARDIAN,
     NOMBRE_ANOMALIA, NOMBRE_GUARDIAN,
     FONDO_SELECCION, LOGO_GUARDIAN, LOGO_ANOMALIA
 )
@@ -227,7 +226,7 @@ class PantallaSeleccion(Screen):
     def _mostrar_popup(self, faccion):
         nombre  = NOMBRE_GUARDIAN if faccion == 'guardian' else NOMBRE_ANOMALIA
         color   = COLOR_GUARDIANES if faccion == 'guardian' else COLOR_ANOMALIAS
-        sprite  = SPRITE_GUARDIAN  if faccion == 'guardian' else SPRITE_ANOMALIA
+        sprite  = None
 
         # Contenido del popup
         contenido = BoxLayout(orientation='vertical', spacing=dp(12), padding=dp(16))
@@ -314,7 +313,7 @@ class PantallaSeleccion(Screen):
 
     def _navegar_a_home(self, dt):
         faccion = self.gm.faccion
-        sprite  = SPRITE_GUARDIAN  if faccion != 'anomalia' else SPRITE_ANOMALIA
+        sprite  = None
         nombre  = NOMBRE_GUARDIAN  if faccion != 'anomalia' else NOMBRE_ANOMALIA
         color   = COLOR_GUARDIANES if faccion != 'anomalia' else COLOR_ANOMALIAS
         pantallaHome = self.manager.get_screen('principal')

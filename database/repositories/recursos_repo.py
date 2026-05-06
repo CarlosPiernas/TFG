@@ -209,3 +209,24 @@ class RecursosRepo:
             conn.commit()
         finally:
             conn.close()
+
+    def get_personaje_activo_id(self) -> int:
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT personaje_activo_id FROM recursos_jugador WHERE id = 1"
+            ).fetchone()
+            return row["personaje_activo_id"] if row else 0
+        finally:
+            conn.close()
+
+    def set_personaje_activo_id(self, inv_id: int):
+        conn = get_connection()
+        try:
+            conn.execute(
+                "UPDATE recursos_jugador SET personaje_activo_id = ? WHERE id = 1",
+                (inv_id,)
+            )
+            conn.commit()
+        finally:
+            conn.close()

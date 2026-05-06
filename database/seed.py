@@ -20,7 +20,7 @@ PERSONAJES = [
         None,
         "assets/logos/IconoMagoAGuardian.png"),
     ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 165, 0,   920, 90,
-        "assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png",
+        None,
         "assets/logos/IconoAsesinoSGuardian.png"),
     ("Guardian_Mago_S",      "guardian", "mago",     "S", 90,  200, 185, 750, 0,
         None,
@@ -39,10 +39,10 @@ PERSONAJES = [
         None,
         "assets/logos/IconoMagoAAnomaliaA.png"),
     ("Anomalia_Guerrero_S",  "anomalia", "guerrero", "S", 240, 195, 0,   1100, 0,
-        "assets/personajes/PersonajesS/Jugable/VORAZ/vorazsplash.png",
+        None,
         "assets/logos/IconoGuerreroAnomaliaS.png"),
     ("Anomalia_Mago_S",      "anomalia", "mago",     "S", 90,  200, 185, 750, 0,
-        "assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png",
+        None,
         "assets/logos/IconoMagoAnomalia.png"),
 ]
 

@@ -18,7 +18,7 @@ from config import (
     ICONO_ATK, ICONO_DEF, ICONO_DES, ICONO_MAG, ICONO_POCION,
     FONDO_RUNA_ANOMALIA, FONDO_RUNA_GUARDIAN,
     PAPIRO_ANOMALIA, PAPIRO_GUARDIAN, ICONO_CAMPAÑA, FONDO_HOME,
-    PLACEHOLDER, SPRITE_GUARDIAN,
+    PLACEHOLDER,
     SLOT_ARMA_VACIO, SLOT_RUNA_VACIO,
     icono_arma, nombre_arma,
     icono_runa,
@@ -216,7 +216,7 @@ class PantallaPrincipal(Screen):
         # fit_mode='cover': la imagen mantiene proporción y rellena todo el área
         # recortando lo que sobre por los bordes (estilo splash art de gacha).
         self.imagenPersonaje = Image(
-            source=SPRITE_GUARDIAN,
+            source=PLACEHOLDER,
             fit_mode='cover',
             mipmap=True,
             size_hint=(1, 0.38)
