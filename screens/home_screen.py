@@ -18,7 +18,10 @@ from config import (
     ICONO_ATK, ICONO_DEF, ICONO_DES, ICONO_MAG, ICONO_POCION,
     FONDO_RUNA_ANOMALIA, FONDO_RUNA_GUARDIAN,
     PAPIRO_ANOMALIA, PAPIRO_GUARDIAN, ICONO_CAMPAÑA, FONDO_HOME,
-    PLACEHOLDER, SPRITE_GUARDIAN
+    PLACEHOLDER, SPRITE_GUARDIAN,
+    SLOT_ARMA_VACIO, SLOT_RUNA_VACIO,
+    icono_arma, nombre_arma,
+    icono_runa,
 )
 
 
@@ -62,7 +65,9 @@ def _stat_fila(icono_path, etiqueta_texto):
 
 
 def _equipo_fila(icono_inicial, ancho_icono):
-    """Fila [icono | (nombre arriba, stats debajo)] para runas y arma."""
+    """Fila [icono | (nombre arriba, stats debajo)] para runas y arma.
+    El icono ocupa la celda con fit_mode='contain' para que el PNG mantenga
+    su proporción sin que Kivy rellene los huecos con blanco."""
     fila = BoxLayout(
         orientation='horizontal',
         size_hint=(1, 1),
@@ -73,8 +78,7 @@ def _equipo_fila(icono_inicial, ancho_icono):
         source=icono_inicial,
         size_hint=(None, 1),
         width=ancho_icono,
-        allow_stretch=True,
-        keep_ratio=True,
+        fit_mode='contain',
         mipmap=True
     )
     info = BoxLayout(orientation='vertical', size_hint=(1, 1), spacing=dp(0))
@@ -136,8 +140,7 @@ class PantallaPrincipal(Screen):
 
         self.logoFaccion = Image(
             source=PLACEHOLDER,
-            allow_stretch=True,
-            keep_ratio=True,
+            fit_mode='contain',
             size_hint=(None, 1),
             width=dp(60)
         )
@@ -157,8 +160,7 @@ class PantallaPrincipal(Screen):
         # Capa 2 — marco decorativo (más grande que el contenedor para envolver la barra)
         self.marcoVida = Image(
             source=MARCO_VIDA,
-            allow_stretch=True,
-            keep_ratio=False,
+            fit_mode='fill',
             mipmap=True,
             pos_hint={'center_x': 0.5, 'center_y': 0.5},
             size_hint=(1.15, 1.6)
@@ -263,6 +265,8 @@ class PantallaPrincipal(Screen):
         ladoStats.add_widget(filaPoc)
 
         # ── Mitad derecha: equipo (runas arriba, arma abajo) ─────────────────
+        # Los iconos arrancan con el placeholder de "slot vacío" para que el
+        # panel se vea decorado incluso cuando no hay nada equipado todavía.
         ladoEquipo = BoxLayout(
             orientation='vertical',
             size_hint=(0.5, 1),
@@ -276,9 +280,9 @@ class PantallaPrincipal(Screen):
             spacing=dp(2)
         )
         filaRuna1, self.iconoRuna1, self.lblNombreRuna1, self.lblStatRuna1 = \
-            _equipo_fila(PLACEHOLDER, dp(32))
+            _equipo_fila(SLOT_RUNA_VACIO, dp(40))
         filaRuna2, self.iconoRuna2, self.lblNombreRuna2, self.lblStatRuna2 = \
-            _equipo_fila(PLACEHOLDER, dp(32))
+            _equipo_fila(SLOT_RUNA_VACIO, dp(40))
         bloqueRunas.add_widget(filaRuna1)
         bloqueRunas.add_widget(filaRuna2)
 
@@ -288,7 +292,7 @@ class PantallaPrincipal(Screen):
             spacing=dp(0)
         )
         filaArma, self.iconoArma, self.lblNombreArma, self.lblStatArma = \
-            _equipo_fila(PLACEHOLDER, dp(36))
+            _equipo_fila(SLOT_ARMA_VACIO, dp(50))
         bloqueArma.add_widget(filaArma)
 
         ladoEquipo.add_widget(bloqueRunas)
@@ -428,12 +432,20 @@ class PantallaPrincipal(Screen):
         equipo     = info.get('equipo', [])
         inv_por_id = {item['id']: item for item in inventario_repo.get_inventario()}
 
+        # Reset: si después no se rellena ningún slot, queda el placeholder de
+        # "slot vacío" en lugar de un hueco en blanco.
         self.lblNombreArma.text  = '—'
         self.lblStatArma.text    = ''
+        self.iconoArma.source    = SLOT_ARMA_VACIO
+        self.iconoArma.reload()
         self.lblNombreRuna1.text = '—'
         self.lblStatRuna1.text   = ''
+        self.iconoRuna1.source   = SLOT_RUNA_VACIO
+        self.iconoRuna1.reload()
         self.lblNombreRuna2.text = '—'
         self.lblStatRuna2.text   = ''
+        self.iconoRuna2.source   = SLOT_RUNA_VACIO
+        self.iconoRuna2.reload()
 
         for slot_info in equipo:
             slot        = slot_info.get('slot', '')
@@ -445,18 +457,25 @@ class PantallaPrincipal(Screen):
             if slot == 'arma':
                 datos = arma_repo.get_by_id(inv_item['catalogo_id'])
                 if datos:
-                    self.lblNombreArma.text = datos.get('nombre', '—')
+                    nombre_db = datos.get('nombre', '')
+                    self.lblNombreArma.text = nombre_arma(nombre_db)
                     self.lblStatArma.text   = f"+{datos.get('bonus_atk',0)}ATK  +{datos.get('bonus_def',0)}DEF"
+                    self.iconoArma.source   = icono_arma(nombre_db)
+                    self.iconoArma.reload()
             elif slot == 'runa_1':
                 datos = runa_repo.get_by_id(inv_item['catalogo_id'])
                 if datos:
                     self.lblNombreRuna1.text = datos.get('nombre', '—')
                     self.lblStatRuna1.text   = f"+{datos.get('bonus_atk',0)}ATK +{datos.get('bonus_magia',0)}MAG +{datos.get('bonus_def',0)}DEF"
+                    self.iconoRuna1.source   = icono_runa(datos.get('nombre', ''))
+                    self.iconoRuna1.reload()
             elif slot == 'runa_2':
                 datos = runa_repo.get_by_id(inv_item['catalogo_id'])
                 if datos:
                     self.lblNombreRuna2.text = datos.get('nombre', '—')
                     self.lblStatRuna2.text   = f"+{datos.get('bonus_atk',0)}ATK +{datos.get('bonus_magia',0)}MAG +{datos.get('bonus_def',0)}DEF"
+                    self.iconoRuna2.source   = icono_runa(datos.get('nombre', ''))
+                    self.iconoRuna2.reload()
 
         # Pociones (formato "POCIONES: X/5") y monedas
         recursos = self.gm.get_recursos()

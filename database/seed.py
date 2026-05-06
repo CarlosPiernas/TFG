@@ -3,37 +3,61 @@ from database.db_manager import get_connection
 
 #DATOS REALES
 
-#(nombre, faccion, clase, rareza, atk_base, defensa_base, magia_base, pv_base, destreza_base, sprite_id)
+#(nombre, faccion, clase, rareza, atk_base, defensa_base, magia_base, pv_base, destreza_base, sprite_id, icono)
 #Stats por clase y rareza según tabla 1.1 del GDD
 PERSONAJES = [
     #Guardianes — B: Guerrero + Mago | A: Guerrero + Mago | S: Asesino + Mago
-    ("Guardian_Guerrero_B",  "guardian", "guerrero", "B", 130, 100, 0,   600, 0,   None),
-    ("Guardian_Mago_B",      "guardian", "mago",     "B", 50,  80,  100, 400, 0,   None),
-    ("Guardian_Guerrero_A",  "guardian", "guerrero", "A", 156, 120, 0,   720, 0,   None),
-    ("Guardian_Mago_A",   "guardian", "mago",  "A", 60, 96, 120,   480, 0,  None),
-    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 165, 0,   920, 90, None),
-    ("Guardian_Mago_S",      "guardian", "mago",     "S", 90,  200, 185, 750, 0, "assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png"),
+    ("Guardian_Guerrero_B",  "guardian", "guerrero", "B", 130, 100, 0,   600, 0,
+        None,
+        "assets/logos/IconoGerreroBGuardian.png"),
+    ("Guardian_Mago_B",      "guardian", "mago",     "B", 50,  80,  100, 400, 0,
+        None,
+        "assets/logos/IconoMagoBGuardian.png"),
+    ("Guardian_Guerrero_A",  "guardian", "guerrero", "A", 156, 120, 0,   720, 0,
+        None,
+        "assets/logos/GuerreroAGuardian.png"),
+    ("Guardian_Mago_A",      "guardian", "mago",     "A", 60,  96,  120, 480, 0,
+        None,
+        "assets/logos/IconoMagoAGuardian.png"),
+    ("Guardian_Asesino_S",   "guardian", "asesino",  "S", 198, 165, 0,   920, 90,
+        "assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png",
+        "assets/logos/IconoAsesinoSGuardian.png"),
+    ("Guardian_Mago_S",      "guardian", "mago",     "S", 90,  200, 185, 750, 0,
+        None,
+        "assets/logos/IconoMagoGuardianS.png"),
     #Anomalías — B: Guerrero + Asesino | A: Asesino + Mago | S: Guerrero + Mago
-    ("Anomalia_Guerrero_B",  "anomalia", "guerrero", "B", 130, 100, 0,   600, 0,   None),
-    ("Anomalia_Asesino_B",   "anomalia", "asesino",  "B", 110, 90,  0,   500, 50,  None),
-    ("Anomalia_Asesino_A",   "anomalia", "asesino",  "A", 132, 108, 0,   600, 60,  None),
-    ("Anomalia_Mago_A",      "anomalia", "mago",     "A", 60,  96,  120, 480, 0,   None),
-    ("Anomalia_Guerrero_S",  "anomalia", "guerrero", "S", 240, 195, 0,   1100, 0,  "assets/personajes/PersonajesS/Jugable/VORAZ/vorazsplash.png"),
-    ("Anomalia_Mago_S",      "anomalia", "mago",     "S", 90,  200, 185, 750, 0,   "assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png"),
+    ("Anomalia_Guerrero_B",  "anomalia", "guerrero", "B", 130, 100, 0,   600, 0,
+        None,
+        "assets/logos/IconoGuerreroBAnomalia.png"),
+    ("Anomalia_Asesino_B",   "anomalia", "asesino",  "B", 110, 90,  0,   500, 50,
+        None,
+        "assets/logos/IconoAsesinoBAnomalia.png"),
+    ("Anomalia_Asesino_A",   "anomalia", "asesino",  "A", 132, 108, 0,   600, 60,
+        None,
+        "assets/logos/IconoAsesinoAAnomaliaA.png"),
+    ("Anomalia_Mago_A",      "anomalia", "mago",     "A", 60,  96,  120, 480, 0,
+        None,
+        "assets/logos/IconoMagoAAnomaliaA.png"),
+    ("Anomalia_Guerrero_S",  "anomalia", "guerrero", "S", 240, 195, 0,   1100, 0,
+        "assets/personajes/PersonajesS/Jugable/VORAZ/vorazsplash.png",
+        "assets/logos/IconoGuerreroAnomaliaS.png"),
+    ("Anomalia_Mago_S",      "anomalia", "mago",     "S", 90,  200, 185, 750, 0,
+        "assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png",
+        "assets/logos/IconoMagoAnomalia.png"),
 ]
 
-#(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, personaje_s_id, efecto_especial)
-#personaje_s_id: Guardian_Asesino_S=6, Anomalia_Asesino_S=12 (ids por orden de inserción)
+#(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, personaje_s_id, efecto_especial, icono)
+#personaje_s_id: Guardian_Asesino_S=5, Anomalia_Mago_S=12 (ids por orden de inserción)
 #Armas según tabla 1.5 del GDD
 ARMAS = [
     #Básicas — una por clase
-    ("Mandoble",         "B", 20, 0,  0, 0,  0,  None, None),
-    ("Baston",           "B", 0,  20, 0, 0,  0,  None, None),
-    ("Daga",             "B", 20, 0,  0, 0,  0,  None, None),
+    ("Mandoble",            "B", 20, 0,  0, 0,  0,  None, None, "assets/logos/IconoMandobleB.jpg"),
+    ("Baston",              "B", 0,  20, 0, 0,  0,  None, None, "assets/logos/IconoBastonB.jpg"),
+    ("Daga",                "B", 20, 0,  0, 0,  0,  None, None, "assets/logos/IconoDagaB.jpg"),
     #S únicas — efectos especiales pendientes hasta Sprint 4
-    ("Mandoble_Cronos",  "S", 55, 0,  0, 55, 0,  None, "TODO: efecto especial"),
-    ("Cetro_Vacio",      "S", 0,  55, 0, 40, 0,  None, "TODO: efecto especial"),
-    ("Hoja_Espectral",   "S", 25, 0,  0, 0,  50, None, "TODO: efecto especial"),
+    ("Hambre Voraz",        "S", 55, 0,  0, 55, 0,  None, "TODO: efecto especial", "assets/logos/IconoMazaS.png"),
+    ("Magia Interior",      "S", 0,  55, 0, 40, 0,  None, "TODO: efecto especial", "assets/logos/IconoBastonS.png"),
+    ("Tirada del Destino",  "S", 25, 0,  0, 0,  50, None, "TODO: efecto especial", "assets/logos/IconoDagaS.png"),
 ]
 
 #(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, efecto_especial)
@@ -57,7 +81,6 @@ RUNAS = [
 #FUNCIONES DE SEED
 
 def _tabla_vacia(cursor: sqlite3.Cursor, tabla: str) -> bool:
-    #Devuelve True si la tabla no tiene filas.
     count = cursor.execute(f"SELECT COUNT(*) FROM {tabla}").fetchone()[0]
     return count == 0
 
@@ -68,8 +91,8 @@ def seed_personajes(cursor: sqlite3.Cursor):
         return
     cursor.executemany("""
         INSERT INTO personajes_catalogo
-            (nombre, faccion, clase, rareza, atk_base, defensa_base, magia_base, pv_base, destreza_base, sprite_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (nombre, faccion, clase, rareza, atk_base, defensa_base, magia_base, pv_base, destreza_base, sprite_id, icono)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, PERSONAJES)
     print(f"{len(PERSONAJES)} personajes insertados.")
 
@@ -80,8 +103,8 @@ def seed_armas(cursor: sqlite3.Cursor):
         return
     cursor.executemany("""
         INSERT INTO armas_catalogo
-            (nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, personaje_s_id, efecto_especial)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, personaje_s_id, efecto_especial, icono)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, ARMAS)
     print(f"{len(ARMAS)} armas insertadas.")
 
@@ -107,7 +130,7 @@ def seed_recursos(cursor: sqlite3.Cursor):
             (id, monedas, tickets_personaje, tickets_arma, pociones, pociones_max,
             ultima_regen, transmutadores, fragmentos_rojos, fragmentos_azules,
             vida_actual, vida_max)
-        VALUES (1, 0, 10, 5, 5, 10, NULL, 0, 0, 0, 0, 0)
+        VALUES (1, 0, 20, 20, 5, 10, NULL, 0, 0, 0, 0, 0)
     """)
     print("Recursos iniciales insertados.")
 
@@ -116,7 +139,6 @@ def seed_pity(cursor: sqlite3.Cursor):
     if not _tabla_vacia(cursor, "contadores_pity"):
         print("contadores_pity ya tiene datos.")
         return
-    #jugador_id = 1 siempre por ahora — un solo jugador local
     cursor.executemany(
         "INSERT INTO contadores_pity (jugador_id, banner, contador) VALUES (?, ?, ?)",
         [(1, "personajes", 0), (1, "armas", 0)]
@@ -128,7 +150,6 @@ def seed_mapa(cursor: sqlite3.Cursor):
     if not _tabla_vacia(cursor, "progreso_mapa"):
         print("progreso_mapa ya tiene datos.")
         return
-    #10 nodos según tabla 2.1 del GDD — nodo 1 desbloqueado, resto bloqueados
     nodos = [
         (1,  "disponible", 0, 0),
         (2,  "bloqueado",  0, 0),
