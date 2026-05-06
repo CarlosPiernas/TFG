@@ -4,3 +4,4 @@ __pycache__/
 .idea/
 firebase/clave-firebase.json
 data/game.db
+.kiro
