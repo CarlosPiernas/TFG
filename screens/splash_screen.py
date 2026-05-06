@@ -6,6 +6,7 @@ from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 
 
 class PantallaSplash(Screen):
@@ -36,13 +37,13 @@ class PantallaSplash(Screen):
         # Subtítulo
         self.subtitulo = Label(
             text='ANOMALÍAS vs GUARDIANES\nDEL ESPACIO TIEMPO',
-            font_size=dp(14),
+            font_size=sf(14),
             bold=True,
             color=(0.85, 0.75, 1, 1),
             halign='center',
             valign='middle',
             size_hint=(1, None),
-            height=dp(50),
+            height=sh(50),
             pos_hint={'center_x': 0.5, 'center_y': 0.47},
             opacity=0
         )
@@ -51,10 +52,10 @@ class PantallaSplash(Screen):
         # Label de toque
         self.tap_label = Label(
             text='TOCA PARA CONTINUAR',
-            font_size=dp(11),
+            font_size=sf(11),
             color=(1, 1, 1, 0.6),
             size_hint=(1, None),
-            height=dp(20),
+            height=sh(20),
             pos_hint={'center_x': 0.5, 'center_y': 0.1},
             opacity=0
         )
