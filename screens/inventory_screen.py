@@ -554,7 +554,13 @@ class PantallaInventario(Screen):
         #   - Runas      → icono de la runa
         #   - Objetos    → icono del objeto virtual
         if self.categoriaActual == 'personajes':
-            ruta_imagen = item.get('sprite_id') or item.get('icono') or PLACEHOLDER
+            from database.repositories.personaje_repo import get_sprite_path
+            ruta_imagen = get_sprite_path(
+                item.get('faccion', ''),
+                item.get('clase', ''),
+                item.get('rareza', ''),
+                'inventario'
+            )
         else:
             ruta_imagen = item.get('icono') or PLACEHOLDER
 

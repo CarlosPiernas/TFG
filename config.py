@@ -73,9 +73,6 @@ BOTON_ARMAS               = 'assets/logos/BotonArmas.png'
 BOTON_RUNAS               = 'assets/logos/BotonRunas.png'
 BOTON_OBJETOS             = 'assets/logos/BotonObjetos.png'
 
-# Sprites personajes
-SPRITE_ANOMALIA = 'assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png'
-SPRITE_GUARDIAN = 'assets/personajes/PersonajesS/Jugable/SARA/sarasplash.png'
 
 # Tienda
 FONDO_TIENDA        = 'assets/fondos/Fondo_Tienda.png'

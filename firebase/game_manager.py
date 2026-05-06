@@ -157,6 +157,7 @@ class GameManager:
         # Al cambiar de personaje activo, su vida_max es distinta y la vida persistida
         # del anterior deja de tener sentido. Reiniciamos a vida llena del nuevo.
         self.personaje_activo_id = inv_id
+        recursos_repo.set_personaje_activo_id(inv_id)
         info = self.get_personaje_activo_info()
         if info is not None:
             pv = info.get("pv_base", 0)
@@ -482,10 +483,15 @@ class GameManager:
     def _cargar_personaje_activo(self) -> int | None:
         if self.faccion is None:
             return None
+        recursos = recursos_repo.get_recursos()
+        if recursos:
+            activo_id = recursos.get('personaje_activo_id', 0)
+            if activo_id and activo_id > 0:
+                return activo_id
+        # Fallback: primer personaje del inventario
         inv = inventario_repo.get_inventario_by_tipo('personaje')
-        if inv:
-            return inv[0]['id']
-        return None
+        return inv[0]['id'] if inv else None
+
     # ═══════════════════════════════════
     # FORJA
     # ═══════════════════════════════════

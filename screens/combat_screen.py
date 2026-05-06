@@ -55,7 +55,7 @@ class PantallaCombate(Screen):
     def __init__(self, gm=None, **kwargs):
         super().__init__(**kwargs)
         self.gm = gm
-        self.nombreJugador = 'NEXPAS'
+        self.nombreJugador = ''
         self.nombreEnemigo = 'PLACEHOLDER'
         self.vidaMaxJugador = 1  # para calcular porcentaje de barra
         self.vidaMaxEnemigo = 1
@@ -242,9 +242,10 @@ class PantallaCombate(Screen):
             self.nombreJugador = info.get('nombre', 'NEXPAS')
             self.vidaMaxJugador = info.get('pv_base', 1)
             sprite = info.get('sprite', '')
-            self.imagenJugador.source = obtenerRutaSprite(self.nombreJugador, ESTADO_IDLE)
             if sprite:
                 self.imagenJugador.source = sprite
+            elif self.nombreJugador:
+                self.imagenJugador.source = obtenerRutaSprite(self.nombreJugador, ESTADO_IDLE)
             self.imagenJugador.reload()
 
         # Sprite del enemigo desde el nodo seleccionado

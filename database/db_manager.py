@@ -130,7 +130,8 @@ def initialize_db():
                 fragmentos_rojos    INTEGER NOT NULL DEFAULT 0,
                 fragmentos_azules   INTEGER NOT NULL DEFAULT 0,
                 vida_actual         INTEGER NOT NULL DEFAULT 0,
-                vida_max            INTEGER NOT NULL DEFAULT 0
+                vida_max            INTEGER NOT NULL DEFAULT 0,
+                personaje_activo_id  INTEGER NOT NULL DEFAULT 0
             )
         """)
 
@@ -149,6 +150,12 @@ def initialize_db():
         """)
 
         conn.commit()
+        # Migración: añadir columna si no existe (seguro ejecutar siempre)
+        try:
+            conn.execute("ALTER TABLE recursos_jugador ADD COLUMN personaje_activo_id INTEGER NOT NULL DEFAULT 0")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # ya existe, ignorar
         print("Base de datos inicializada correctamente.")
     except sqlite3.Error as e:
         print(f"[ERROR] Error al inicializar la base de datos: {e}")
