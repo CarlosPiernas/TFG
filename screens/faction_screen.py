@@ -7,6 +7,7 @@ from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 from kivy.animation import Animation
 from kivy.uix.image import Image
 from config import (
@@ -233,18 +234,18 @@ class PantallaSeleccion(Screen):
 
         contenido.add_widget(Label(
             text=f'¿Quieres unirte a\n{nombre}?',
-            font_size=dp(15),
+            font_size=sf(15),
             bold=True,
             color=color,
             halign='center',
             size_hint=(1, None),
-            height=dp(60)
+            height=sh(60)
         ))
 
         fila_botones = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=dp(44),
+            height=sh(44),
             spacing=dp(10)
         )
 
@@ -254,7 +255,7 @@ class PantallaSeleccion(Screen):
             text_color=BLANCO,
             radius=8,
             size_hint=(0.5, 1),
-            font_size=dp(13),
+            font_size=sf(13),
             bold=True
         )
 
@@ -264,7 +265,7 @@ class PantallaSeleccion(Screen):
             text_color=BLANCO,
             radius=8,
             size_hint=(0.5, 1),
-            font_size=dp(13)
+            font_size=sf(13)
         )
 
         fila_botones.add_widget(btn_si)
@@ -275,7 +276,7 @@ class PantallaSeleccion(Screen):
             title='',
             content=contenido,
             size_hint=(0.78, None),
-            height=dp(180),
+            height=sh(180),
             background='',
             background_color=(0.08, 0.08, 0.15, 0.97),
             separator_height=0

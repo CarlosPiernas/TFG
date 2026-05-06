@@ -4,6 +4,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle, Ellipse, Line
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 
 from config import FONDO_SELECCION
 from widgets.componentes import BotonRedondeado
@@ -117,7 +118,7 @@ class _NodoWidget(Widget):
 
         lbl = Label(
             text=self.icono,
-            font_size=dp(18) if self.jefe else dp(13),
+            font_size=sf(18) if self.jefe else sf(13),
             bold=True,
             color=colorTexto,
             pos=self.pos,
@@ -269,11 +270,11 @@ class PantallaMapa(Screen):
 
         titulo = Label(
             text='— CAMPAÑA —',
-            font_size=dp(22),
+            font_size=sf(22),
             bold=True,
             color=(0.9, 0.75, 0.3, 1),
             size_hint=(1, None),
-            height=dp(50),
+            height=sh(50),
             pos_hint={'x': 0, 'top': 0.97},
             halign='center',
             valign='middle'
@@ -296,7 +297,7 @@ class PantallaMapa(Screen):
 
         for i, (datos, (px, py)) in enumerate(zip(NODOS_CONFIG, POSICIONES)):
             jefe = datos['jefe']
-            tam  = dp(75) if jefe else dp(55)
+            tam  = sw(75) if jefe else sw(55)
             nodo_id = i + 1  # nodo_id 1-based, igual que en la BD
 
             nodo = _NodoWidget(
@@ -315,11 +316,11 @@ class PantallaMapa(Screen):
 
             etiqueta = Label(
                 text=datos['nombre'],
-                font_size=dp(9),
+                font_size=sf(9),
                 bold=jefe,
                 color=NORMAL_ETIQUETA_JEFE if jefe else NORMAL_ETIQUETA_NODO,
                 size_hint=(None, None),
-                size=(dp(90), dp(18)),
+                size=(sw(90), sh(18)),
                 pos_hint={'center_x': px, 'center_y': py - 0.07},
                 halign='center',
                 valign='middle'
@@ -334,9 +335,9 @@ class PantallaMapa(Screen):
             text_color=(0.9, 0.75, 0.3, 1),
             radius=8,
             size_hint=(None, None),
-            size=(dp(100), dp(36)),
+            size=(sw(100), sh(36)),
             pos_hint={'x': 0.04, 'y': 0.02},
-            font_size=dp(12),
+            font_size=sf(12),
             bold=True
         )
         botonVolver.bind(on_press=lambda _: self.navegarA('principal'))
@@ -345,7 +346,7 @@ class PantallaMapa(Screen):
         self.botonDificultad = _BotonOvalo(
             callback=self.cambiarDificultad,
             size_hint=(None, None),
-            size=(dp(80), dp(44)),
+            size=(sw(80), sh(44)),
             pos_hint={'right': 0.96, 'center_y': 0.47}
         )
         raiz.add_widget(self.botonDificultad)

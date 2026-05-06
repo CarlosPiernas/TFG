@@ -7,6 +7,7 @@ from kivy.uix.image import Image
 from kivy.uix.button import Button
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 from config import (
     PANEL_MEDIO, COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO,
     COLOR_VIDA, COLOR_VIDA_MEDIA, COLOR_VIDA_BAJA, COLOR_STATS,
@@ -39,8 +40,8 @@ def _stat_fila(icono_path, etiqueta_texto):
     )
     fila.add_widget(Image(
         source=icono_path,
-        size_hint=(None, None),
-        size=(dp(26), dp(26)),
+        size_hint=(None, 1),
+        width=dp(22),
         allow_stretch=True,
         keep_ratio=True,
         mipmap=True,
@@ -48,7 +49,7 @@ def _stat_fila(icono_path, etiqueta_texto):
     ))
     lbl = Label(
         text=f"{etiqueta_texto}: —",
-        font_size=dp(14),
+        font_size=sf(11),
         bold=True,
         color=BLANCO,
         halign='left',
@@ -65,7 +66,7 @@ def _equipo_fila(icono_inicial, ancho_icono):
     fila = BoxLayout(
         orientation='horizontal',
         size_hint=(1, 1),
-        spacing=dp(8),
+        spacing=dp(4),
         padding=[dp(2), dp(2)]
     )
     icono = Image(
@@ -79,7 +80,7 @@ def _equipo_fila(icono_inicial, ancho_icono):
     info = BoxLayout(orientation='vertical', size_hint=(1, 1), spacing=dp(0))
     lbl_nombre = Label(
         text='—',
-        font_size=dp(13),
+        font_size=sf(10),
         color=BLANCO,
         bold=True,
         halign='left',
@@ -89,7 +90,7 @@ def _equipo_fila(icono_inicial, ancho_icono):
     lbl_nombre.bind(size=lbl_nombre.setter('text_size'))
     lbl_stats = Label(
         text='',
-        font_size=dp(12),
+        font_size=sf(9),
         color=COLOR_STATS,
         bold=True,
         halign='left',
@@ -138,7 +139,7 @@ class PantallaPrincipal(Screen):
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(None, 1),
-            width=dp(90)
+            width=dp(60)
         )
 
         # ── Barra de vida con marco decorativo superpuesto ───────────────────
@@ -167,7 +168,7 @@ class PantallaPrincipal(Screen):
         # Capa 3 — texto de vida ("X / Y") centrado
         self.lblVida = Label(
             text='—',
-            font_size=dp(14),
+            font_size=sf(12),
             bold=True,
             color=BLANCO,
             pos_hint={'center_x': 0.5, 'center_y': 0.5},
@@ -182,12 +183,12 @@ class PantallaPrincipal(Screen):
         filaMonedas = BoxLayout(
             orientation='horizontal',
             size_hint=(None, 1),
-            width=dp(70),
+            width=dp(60),
             spacing=dp(4)
         )
         self.etiquetaMonedas = Label(
             text='0',
-            font_size=dp(15),
+            font_size=sf(13),
             bold=True,
             color=COLOR_GUARDIANES,
             size_hint=(1, 1),
@@ -199,7 +200,7 @@ class PantallaPrincipal(Screen):
         filaMonedas.add_widget(Image(
             source=ICONO_MONEDA,
             size_hint=(None, 1),
-            width=dp(28),
+            width=dp(22),
             allow_stretch=True,
             keep_ratio=True,
             mipmap=True
@@ -275,9 +276,9 @@ class PantallaPrincipal(Screen):
             spacing=dp(2)
         )
         filaRuna1, self.iconoRuna1, self.lblNombreRuna1, self.lblStatRuna1 = \
-            _equipo_fila(PLACEHOLDER, dp(40))
+            _equipo_fila(PLACEHOLDER, dp(32))
         filaRuna2, self.iconoRuna2, self.lblNombreRuna2, self.lblStatRuna2 = \
-            _equipo_fila(PLACEHOLDER, dp(40))
+            _equipo_fila(PLACEHOLDER, dp(32))
         bloqueRunas.add_widget(filaRuna1)
         bloqueRunas.add_widget(filaRuna2)
 
@@ -287,7 +288,7 @@ class PantallaPrincipal(Screen):
             spacing=dp(0)
         )
         filaArma, self.iconoArma, self.lblNombreArma, self.lblStatArma = \
-            _equipo_fila(PLACEHOLDER, dp(50))
+            _equipo_fila(PLACEHOLDER, dp(36))
         bloqueArma.add_widget(filaArma)
 
         ladoEquipo.add_widget(bloqueRunas)
@@ -316,7 +317,7 @@ class PantallaPrincipal(Screen):
             background_down=ICONO_GACHA,
             background_color=(1, 1, 1, 1),
             size_hint=(None, 1),
-            width=dp(100),
+            width=dp(80),
             border=(0, 0, 0, 0),
             mipmap=True
         )
@@ -337,7 +338,7 @@ class PantallaPrincipal(Screen):
             background_down=ICONO_INVENTARIO,
             background_color=(1, 1, 1, 1),
             size_hint=(None, 1),
-            width=dp(100),
+            width=dp(80),
             border=(0, 0, 0, 0),
             mipmap=True
         )

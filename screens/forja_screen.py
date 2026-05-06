@@ -9,6 +9,7 @@ from kivy.uix.button import Button
 from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 from config import (
     PANEL_OSCURO, PANEL_MEDIO,
     COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO, GRIS,
@@ -173,7 +174,7 @@ class PantallaForja(Screen):
         cerdaContador = BoxLayout(
             orientation='horizontal',
             size_hint=(None, 1),
-            width=dp(110),
+            width=sw(110),
             spacing=dp(4),
             padding=[dp(10), dp(4)]
         )
@@ -194,14 +195,14 @@ class PantallaForja(Screen):
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(None, 1),
-            width=dp(28),
+            width=sw(28),
             mipmap=True
         )
         cerdaContador.add_widget(self.iconoTransmutador)
 
         self.etiquetaTransmutadores = Label(
             text=': 0',
-            font_size=dp(15),
+            font_size=sf(15),
             bold=True,
             color=BLANCO,
             halign='left',
@@ -405,8 +406,8 @@ class PantallaForja(Screen):
                 text_color=(0.9, 0.75, 0.3, 1),
                 radius=8,
                 size_hint=(None, 1),
-                width=dp(100),
-                font_size=dp(10),
+                width=sw(100),
+                font_size=sf(10),
                 bold=True
             )
             btn.bind(on_press=lambda _, r=runa: self._asignarRuna(r))

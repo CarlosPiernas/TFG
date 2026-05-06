@@ -7,6 +7,7 @@ from kivy.uix.button import Button
 from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, RoundedRectangle, Rectangle
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 from kivy.clock import Clock
 import os
 
@@ -141,7 +142,7 @@ class PantallaGacha(Screen):
         self.iconoTicketPersonajes = Image(
             source=TICKET_PERSONAJES,
             size_hint=(None, None),
-            size=(dp(28), dp(28)),
+            size=(sw(28), sw(28)),
             allow_stretch=True,
             keep_ratio=True,
             mipmap=True,
@@ -149,7 +150,7 @@ class PantallaGacha(Screen):
         )
         self.lblTicketsPersonajes = Label(
             text='0',
-            font_size=dp(13),
+            font_size=sf(13),
             bold=True,
             color=COLOR_GUARDIANES,
             size_hint=(1, 1),
@@ -176,7 +177,7 @@ class PantallaGacha(Screen):
         self.iconoTicketArmas = Image(
             source=TICKET_ARMAS,
             size_hint=(None, None),
-            size=(dp(28), dp(28)),
+            size=(sw(28), sw(28)),
             allow_stretch=True,
             keep_ratio=True,
             mipmap=True,
@@ -184,7 +185,7 @@ class PantallaGacha(Screen):
         )
         self.lblTicketsArmas = Label(
             text='0',
-            font_size=dp(13),
+            font_size=sf(13),
             bold=True,
             color=COLOR_GUARDIANES,
             size_hint=(1, 1),
@@ -204,7 +205,7 @@ class PantallaGacha(Screen):
         self.lblPity = Label(
             text='Próximo [b]S[/b] en: [color=#ffbf00]—[/color]',
             markup=True,
-            font_size=dp(12),
+            font_size=sf(12),
             color=BLANCO,
             size_hint=(0.6, 0.05),
             pos_hint={'center_x': 0.5, 'y': 0.30},

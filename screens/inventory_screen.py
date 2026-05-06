@@ -9,6 +9,7 @@ from kivy.uix.button import Button
 from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 from config import (
     PANEL_OSCURO, PANEL_MEDIO,
     COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO, GRIS, COLOR_STATS,
@@ -275,7 +276,7 @@ class PantallaInventario(Screen):
         )
         self.lblStats = Label(
             text='Selecciona un item',
-            font_size=dp(12),
+            font_size=sf(12),
             color=BLANCO,
             bold=True,
             halign='left',
@@ -319,7 +320,7 @@ class PantallaInventario(Screen):
         )
         self.lblDescripcion = Label(
             text='Selecciona un item para ver su descripción.',
-            font_size=dp(11),
+            font_size=sf(11),
             color=BLANCO,
             italic=True,
             halign='left',
@@ -494,7 +495,7 @@ class PantallaInventario(Screen):
         contenedor = BoxLayout(
             orientation='vertical',
             size_hint=(None, 1),
-            width=dp(110),
+            width=sw(110),
             padding=[dp(4), dp(4)]
         )
 
@@ -508,7 +509,7 @@ class PantallaInventario(Screen):
             background_color=(0.08, 0.08, 0.15, 0.95),
             background_normal='',
             color=(0.9, 0.75, 0.3, 1),
-            font_size=dp(10),
+            font_size=sf(10),
             bold=True,
             size_hint=(1, 1)
         )

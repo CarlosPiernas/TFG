@@ -5,6 +5,7 @@ from kivy.uix.image import Image
 from kivy.uix.scrollview import ScrollView
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 
 from config import (
     FONDO_PRINCIPAL, PANEL_OSCURO, PANEL_MEDIO,
@@ -72,11 +73,11 @@ class PantallaCombate(Screen):
 
         self.etiquetaTurno = Label(
             text='TURNO 1',
-            font_size=dp(16),
+            font_size=sf(16),
             bold=True,
             color=COLOR_GUARDIANES,
             size_hint=(1, None),
-            height=dp(35),
+            height=sh(35),
             halign='center',
             valign='middle'
         )
@@ -146,11 +147,11 @@ class PantallaCombate(Screen):
 
         etiquetaLog = Label(
             text='LOG DE COMBATE',
-            font_size=dp(10),
+            font_size=sf(10),
             bold=True,
             color=COLOR_GUARDIANES,
             size_hint=(1, None),
-            height=dp(24),
+            height=sh(24),
             halign='center',
             valign='middle'
         )
@@ -171,7 +172,7 @@ class PantallaCombate(Screen):
         barraInferior = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=dp(55),
+            height=sh(55),
             spacing=dp(10),
             padding=[dp(10), dp(6)]
         )
@@ -304,10 +305,10 @@ class PantallaCombate(Screen):
     def añadirMensajeLog(self, mensaje):
         etiqueta = Label(
             text=mensaje,
-            font_size=dp(10),
+            font_size=sf(10),
             color=BLANCO,
             size_hint=(1, None),
-            height=dp(20),
+            height=sh(20),
             halign='left',
             valign='middle'
         )

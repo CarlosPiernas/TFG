@@ -8,6 +8,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
+from widgets.responsive import sw, sh, sf, sdp
 
 from widgets.componentes import BotonRedondeado
 from config import (
@@ -36,25 +37,28 @@ class FilaProducto(BoxLayout):
         super().__init__(**kwargs)
         self.producto        = producto
         self.orientation     = 'horizontal'
-        self.size_hint       = (0.4, None)
-        self.height          = dp(62)
-        self.padding         = [dp(12), dp(6)]
+        self.size_hint       = (1, None)
+        self.height          = sh(52)
+        self.padding         = [0, dp(4)]
         self.spacing         = dp(8)
         self._seleccionado   = False
         self._on_seleccionar = on_seleccionar
 
         with self.canvas.before:
             self._color_bg = Color(0, 0, 0, 0)
-            self._rect_bg  = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
+            self._rect_bg  = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(0)])
         self.bind(
             pos=lambda *a: setattr(self._rect_bg, 'pos', self.pos),
             size=lambda *a: setattr(self._rect_bg, 'size', self.size)
         )
 
+        # Left spacer to center content
+        self.add_widget(Widget(size_hint=(1, 1)))
+
         self.add_widget(Image(
             source=producto['icono'],
             size_hint=(None, 1),
-            width=dp(36),
+            width=dp(32),
             allow_stretch=True,
             keep_ratio=True,
             mipmap=True
@@ -62,15 +66,19 @@ class FilaProducto(BoxLayout):
 
         lbl_nombre = Label(
             text=producto['nombre'],
-            font_size=dp(13),
+            font_size=sf(12),
             bold=True,
             color=BLANCO,
-            size_hint=(1, 1),
+            size_hint=(None, 1),
+            width=dp(160),
             halign='left',
             valign='middle'
         )
         lbl_nombre.bind(size=lbl_nombre.setter('text_size'))
         self.add_widget(lbl_nombre)
+
+        # Right spacer to center content
+        self.add_widget(Widget(size_hint=(1, 1)))
 
         self.bind(on_touch_down=self._on_toque)
 
@@ -81,7 +89,7 @@ class FilaProducto(BoxLayout):
 
     def seleccionar(self):
         self._seleccionado  = True
-        self._color_bg.rgba = (1, 1, 1, 0.15)
+        self._color_bg.rgba = (1, 0.75, 0, 0.35)   # gold highlight
 
     def deseleccionar(self):
         self._seleccionado  = False
@@ -106,41 +114,49 @@ class PantallaTienda(Screen):
             mipmap=True
         ))
 
-        # ── TÍTULO ────────────────────────────────────────────────────────────
-        raiz.add_widget(Image(
+        # ── CONTENIDO SOBRE EL FONDO (BoxLayout vertical) ─────────────────────
+        contenido = BoxLayout(
+            orientation='vertical',
+            size_hint=(1, 1),
+            padding=[0, dp(6)],
+            spacing=dp(4)
+        )
+        raiz.add_widget(contenido)
+
+        # ── TÍTULO (10%) ──────────────────────────────────────────────────────
+        contenido.add_widget(Image(
             source=TITULO_TIENDA,
-            size_hint=(0.7, 0.1),
-            pos_hint={'center_x': 0.5, 'top': 1.0},
+            size_hint=(0.7, 0.10),
+            pos_hint={'center_x': 0.5},
             allow_stretch=True,
             keep_ratio=True,
             mipmap=True
         ))
 
-        # ── FILAS DE PRODUCTOS ────────────────────────────────────────────────
+        # ── FILAS DE PRODUCTOS (54% total — 9% cada una × 6) ─────────────────
         todos = PRODUCTOS_MONEDAS + PRODUCTOS_FRAGMENTOS
-        tops  = [0.88, 0.79, 0.70, 0.61, 0.52, 0.43]
-
         self._filas = []
-        for i, p in enumerate(todos):
+        for p in todos:
             fila = FilaProducto(p, self._seleccionar_producto)
-            fila.pos_hint = {'center_x': 0.55, 'top': tops[i]}
+            # Override size_hint to fill width and take equal vertical share
+            fila.size_hint = (1, None)
+            fila.height    = sh(52)
             self._filas.append(fila)
-            raiz.add_widget(fila)
+            contenido.add_widget(fila)
 
-        # ── RECURSOS ──────────────────────────────────────────────────────────    
+        # ── RECURSOS (6%) ─────────────────────────────────────────────────────
         filaRecursos = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, 0.05),
-            pos_hint={'center_x': 0.5, 'y': 0.32},
-            spacing=dp(12),
-            padding=[dp(16), 0]
+            size_hint=(1, 0.06),
+            spacing=dp(8),
+            padding=[dp(12), dp(2)]
         )
         with filaRecursos.canvas.before:
             Color(0, 0, 0, 0.55)
             self._bgRecursos = RoundedRectangle(
                 pos=filaRecursos.pos,
                 size=filaRecursos.size,
-                radius=[dp(0)]
+                radius=[dp(6)]
             )
         filaRecursos.bind(
             pos=lambda *a: setattr(self._bgRecursos, 'pos', filaRecursos.pos),
@@ -148,27 +164,27 @@ class PantallaTienda(Screen):
         )
 
         def _recurso_widget(icono, attr):
-            fila = BoxLayout(orientation='horizontal', size_hint=(None, 1), width=dp(80), spacing=dp(4))
-            fila.add_widget(Image(source=icono, size_hint=(None, 1), width=dp(20), allow_stretch=True, keep_ratio=True, mipmap=True))
-            lbl = Label(font_size=dp(12), bold=True, color=COLOR_GUARDIANES, size_hint=(1, 1), halign='left', valign='middle')
+            fila = BoxLayout(orientation='horizontal', size_hint=(1, 1), spacing=dp(4))
+            fila.add_widget(Image(source=icono, size_hint=(None, 1), width=dp(20),
+                                  allow_stretch=True, keep_ratio=True, mipmap=True))
+            lbl = Label(font_size=sf(12), bold=True, color=COLOR_GUARDIANES,
+                        size_hint=(1, 1), halign='left', valign='middle')
             lbl.bind(size=lbl.setter('text_size'))
             fila.add_widget(lbl)
             setattr(self, attr, lbl)
             return fila
 
-        filaRecursos.add_widget(Widget(size_hint=(1, 1)))
         filaRecursos.add_widget(_recurso_widget(ICONO_MONEDA,   'lblMonedas'))
         filaRecursos.add_widget(_recurso_widget(FRAGMENTO_ROJO, 'lblFragRojos'))
         filaRecursos.add_widget(_recurso_widget(FRAGMENTO_AZUL, 'lblFragAzules'))
-        filaRecursos.add_widget(Widget(size_hint=(1, 1)))
-        raiz.add_widget(filaRecursos)
+        contenido.add_widget(filaRecursos)
 
-        # ── BOTÓN COMPRAR ─────────────────────────────────────────────────────
+        # ── BOTÓN COMPRAR (12%) ───────────────────────────────────────────────
         panelComprar = BoxLayout(
             orientation='horizontal',
-            size_hint=(0.88, 0.09),
-            pos_hint={'center_x': 0.5, 'y': 0.20},
-            spacing=dp(8)
+            size_hint=(1, 0.12),
+            spacing=dp(8),
+            padding=[dp(12), dp(4)]
         )
 
         self.btnComprar = Button(
@@ -189,7 +205,7 @@ class PantallaTienda(Screen):
         )
         self.lblPrecioSeleccionado = Label(
             text='',
-            font_size=dp(14),
+            font_size=sf(13),
             bold=True,
             color=COLOR_GUARDIANES,
             size_hint=(1, 1),
@@ -200,7 +216,7 @@ class PantallaTienda(Screen):
         self.iconoDivisaSeleccionada = Image(
             source=ICONO_MONEDA,
             size_hint=(None, 1),
-            width=dp(24),
+            width=dp(22),
             allow_stretch=True,
             keep_ratio=True,
             mipmap=True
@@ -209,14 +225,14 @@ class PantallaTienda(Screen):
         self.filaPrecioSeleccionado.add_widget(self.iconoDivisaSeleccionada)
         panelComprar.add_widget(self.btnComprar)
         panelComprar.add_widget(self.filaPrecioSeleccionado)
-        raiz.add_widget(panelComprar)
+        contenido.add_widget(panelComprar)
 
-        # ── NAVEGACIÓN ────────────────────────────────────────────────────────
+        # ── NAVEGACIÓN (10%) ──────────────────────────────────────────────────
         barraNav = BoxLayout(
             orientation='horizontal',
-            size_hint=(0.88, 0.10),
-            pos_hint={'center_x': 0.5, 'y': 0.08},
-            spacing=dp(10)
+            size_hint=(1, 0.10),
+            spacing=dp(10),
+            padding=[dp(12), dp(4)]
         )
 
         btnVolver = Button(
@@ -226,14 +242,14 @@ class PantallaTienda(Screen):
             background_color=(1, 1, 1, 1),
             color=BLANCO,
             bold=True,
-            font_size=dp(13),
+            font_size=sf(13),
             border=(0, 0, 0, 0),
             size_hint=(1, 1),
             mipmap=True
         )
         btnVolver.bind(on_press=self._ir_al_gacha_o_home)
         barraNav.add_widget(btnVolver)
-        raiz.add_widget(barraNav)
+        contenido.add_widget(barraNav)
 
         self.add_widget(raiz)
 
