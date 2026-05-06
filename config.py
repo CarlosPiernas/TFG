@@ -17,7 +17,7 @@ COLOR_CAMPAÑA    = hex_to_kivy('#009aa6')
 COLOR_VIDA       = hex_to_kivy('#00cc33')
 COLOR_VIDA_MEDIA = hex_to_kivy('#ff9900')
 COLOR_VIDA_BAJA  = hex_to_kivy('#cc2222')
-COLOR_STATS      = hex_to_kivy('#5fffa8')   # verde menta brillante para stats de equipo
+COLOR_STATS      = hex_to_kivy('#ffffff')   # verde menta brillante para stats de equipo
 
 # Moneda e iconos de navegación
 ICONO_MONEDA     = 'assets/logos/Moneda.png'
@@ -36,6 +36,8 @@ FONDO_HOME       = 'assets/fondos/FondoPantallaHome.jpg'
 # Fondos bloque runas
 FONDO_RUNA_ANOMALIA  = 'assets/fondos/fondoRunaAnoma.jpg'
 FONDO_RUNA_GUARDIAN  = 'assets/fondos/fondoRunaGuard.jpg'
+SLOT_RUNA_VACIO = 'assets/logos/SlotRunaVacio.png'
+SLOT_ARMA_VACIO = 'assets/logos/SlotArmaVacio.png'
 
 # Placeholder para assets que faltan
 PLACEHOLDER = 'assets/test.png'
@@ -58,7 +60,7 @@ SLOT_RUNA_RESULTADO  = 'assets/logos/SlotResultadoRuna.png'
 # Forja: iconos de botones y cargas
 ICONO_FORJAR              = 'assets/logos/IconoForjar.png'
 MARCO_BOTON               = 'assets/logos/Boton.png'
-BOTON_FORJAR              = 'assets/logos/BotonForjar.png'
+BOTON_TRANSMUTAR            = 'assets/logos/BotonTransmutar.png'
 ICONO_TRANSMUTADOR        = 'assets/logos/CargaTransmutacion.png'
 FLECHA_TRANSMUTAR_GUARDIAN = 'assets/logos/FlechaTransmutar.png'
 FLECHA_TRANSMUTAR_ANOMALIA = 'assets/logos/FlechaTransmutarAnomalia.png'
@@ -106,3 +108,131 @@ FONDO_GACHA = 'assets/fondos/Fondo_Gacha_Anomalia.png'
 # Nombres de facción
 NOMBRE_ANOMALIA = 'ANOMALÍAS'
 NOMBRE_GUARDIAN = 'GUARDIANES'
+
+# ── Iconos de armas ────────────────────────────────────────────────────────
+# Mapean el nombre interno del arma (tal y como aparece en seed.py de M1)
+# a su icono visual. Si M1 añade un arma nueva sin entrada aquí, se cae al
+# PLACEHOLDER en lugar de romper la UI.
+
+ICONO_ARMA_DAGA_B     = 'assets/logos/IconoDagaB.png'
+ICONO_ARMA_MANDOBLE_B = 'assets/logos/IconoMandobleB.png'
+ICONO_ARMA_BASTON_B   = 'assets/logos/IconoBastonB.png'
+ICONO_ARMA_DAGA_S     = 'assets/logos/IconoDagaS.png'
+ICONO_ARMA_MAZA_S     = 'assets/logos/IconoMazaS.png'
+ICONO_ARMA_BASTON_S   = 'assets/logos/IconoBastonS.png'
+
+# Las claves coinciden EXACTAMENTE con los nombres en seed.py de M1.
+ARMA_ICONOS = {
+    # Básicas (B)
+    'Daga':                ICONO_ARMA_DAGA_B,
+    'Mandoble':            ICONO_ARMA_MANDOBLE_B,
+    'Baston':              ICONO_ARMA_BASTON_B,
+    # Únicas (S)
+    'Tirada del Destino':  ICONO_ARMA_DAGA_S,
+    'Hambre Voraz':        ICONO_ARMA_MAZA_S,
+    'Magia Interior':      ICONO_ARMA_BASTON_S,
+}
+
+# Nombres bonitos a mostrar al usuario. El nombre interno (clave) sigue siendo
+# el que persiste M1 en BD; este diccionario es solo presentación.
+ARMA_NOMBRES_DISPLAY = {
+    'Daga':                'Daga',
+    'Mandoble':            'Mandoble',
+    'Baston':              'Bastón',
+    'Tirada del Destino':  'Tirada del Destino',
+    'Hambre Voraz':        'Hambre Voraz',
+    'Magia Interior':      'Magia Interior',
+}
+
+
+def icono_arma(nombre_db: str) -> str:
+    """Devuelve la ruta del icono de un arma a partir de su nombre interno."""
+    return ARMA_ICONOS.get(nombre_db, PLACEHOLDER)
+
+
+def nombre_arma(nombre_db: str) -> str:
+    """Devuelve el nombre bonito de un arma a partir de su nombre interno."""
+    return ARMA_NOMBRES_DISPLAY.get(nombre_db, nombre_db)
+
+
+# ── Iconos de personajes ───────────────────────────────────────────────────
+# Mapean el nombre interno (tal y como lo devuelve tirar_gacha) a su icono.
+
+ICONO_ANOMALIA_GUERRERO_B = 'assets/logos/IconoGuerreroBAnomalia.png'
+ICONO_ANOMALIA_ASESINO_B  = 'assets/logos/IconoAsesinoBAnomalia.png'
+ICONO_ANOMALIA_ASESINO_A  = 'assets/logos/IconoAsesinoAAnomaliaA.png'
+ICONO_ANOMALIA_MAGO_A     = 'assets/logos/IconoMagoAAnomaliaA.png'
+ICONO_ANOMALIA_GUERRERO_S = 'assets/logos/IconoGuerreroAnomaliaS.png'
+ICONO_ANOMALIA_MAGO_S     = 'assets/logos/IconoMagoAnomalia.png'
+
+ICONO_GUARDIAN_GUERRERO_B = 'assets/logos/IconoGerreroBGuardian.png'   # typo en filename intencional
+ICONO_GUARDIAN_MAGO_B     = 'assets/logos/IconoMagoBGuardian.png'
+ICONO_GUARDIAN_GUERRERO_A = 'assets/logos/GuerreroAGuardian.png'        # sin prefijo "Icono"
+ICONO_GUARDIAN_MAGO_A     = 'assets/logos/IconoMagoAGuardian.png'
+ICONO_GUARDIAN_ASESINO_S  = 'assets/logos/IconoAsesinoSGuardian.png'
+ICONO_GUARDIAN_MAGO_S     = 'assets/logos/IconoMagoGuardianS.png'
+
+PERSONAJE_ICONOS = {
+    'Anomalia_Guerrero_B': ICONO_ANOMALIA_GUERRERO_B,
+    'Anomalia_Asesino_B':  ICONO_ANOMALIA_ASESINO_B,
+    'Anomalia_Asesino_A':  ICONO_ANOMALIA_ASESINO_A,
+    'Anomalia_Mago_A':     ICONO_ANOMALIA_MAGO_A,
+    'Anomalia_Guerrero_S': ICONO_ANOMALIA_GUERRERO_S,
+    'Anomalia_Mago_S':     ICONO_ANOMALIA_MAGO_S,
+    'Guardian_Guerrero_B': ICONO_GUARDIAN_GUERRERO_B,
+    'Guardian_Mago_B':     ICONO_GUARDIAN_MAGO_B,
+    'Guardian_Guerrero_A': ICONO_GUARDIAN_GUERRERO_A,
+    'Guardian_Mago_A':     ICONO_GUARDIAN_MAGO_A,
+    'Guardian_Asesino_S':  ICONO_GUARDIAN_ASESINO_S,
+    'Guardian_Mago_S':     ICONO_GUARDIAN_MAGO_S,
+}
+
+
+def icono_personaje(nombre_db: str) -> str:
+    """Devuelve la ruta del icono de un personaje a partir de su nombre interno."""
+    return PERSONAJE_ICONOS.get(nombre_db, PLACEHOLDER)
+
+
+def nombre_personaje(nombre_db: str) -> str:
+    """Devuelve el nombre legible: 'Anomalia_Mago_S' -> 'Mago S'."""
+    partes = nombre_db.split('_')
+    if len(partes) >= 3:
+        return f'{partes[1]} {partes[2]}'
+    return nombre_db
+
+
+# ── Iconos de runas ────────────────────────────────────────────────────────
+# Mapean el nombre interno de la runa (tal y como aparece en seed.py de M1)
+# a su icono visual. Las claves coinciden EXACTAMENTE con los nombres en BD.
+
+ICONO_RUNA_ATAQUE   = 'assets/logos/runas/Ataque.png'
+ICONO_RUNA_MAGIA    = 'assets/logos/runas/Magia.png'
+ICONO_RUNA_DEFENSA  = 'assets/logos/runas/Defensa.png'
+ICONO_RUNA_DESTREZA = 'assets/logos/runas/Destreza.png'
+ICONO_RUNA_ACERO    = 'assets/logos/runas/Acero.png'
+ICONO_RUNA_CAZA     = 'assets/logos/runas/Caza.png'
+ICONO_RUNA_SOMBRA   = 'assets/logos/runas/Sombras.png'   # filename en plural
+ICONO_RUNA_ARCANA   = 'assets/logos/runas/Arcana.png'
+ICONO_RUNA_GUARDIAN = 'assets/logos/runas/Guardian.png'
+ICONO_RUNA_ROTA     = 'assets/logos/runas/Rota.png'
+
+RUNA_ICONOS = {
+    # Básicas
+    'RUNA_ATAQUE':   ICONO_RUNA_ATAQUE,
+    'RUNA_MAGIA':    ICONO_RUNA_MAGIA,
+    'RUNA_DEFENSA':  ICONO_RUNA_DEFENSA,
+    'RUNA_DESTREZA': ICONO_RUNA_DESTREZA,
+    # Mixtas
+    'RUNA_ACERO':    ICONO_RUNA_ACERO,
+    'RUNA_CAZA':     ICONO_RUNA_CAZA,
+    'RUNA_SOMBRA':   ICONO_RUNA_SOMBRA,
+    'RUNA_ARCANA':   ICONO_RUNA_ARCANA,
+    'RUNA_GUARDIAN': ICONO_RUNA_GUARDIAN,
+    # Penalización
+    'RUNA_ROTA':     ICONO_RUNA_ROTA,
+}
+
+
+def icono_runa(nombre_db: str) -> str:
+    """Devuelve la ruta del icono de una runa a partir de su nombre interno."""
+    return RUNA_ICONOS.get(nombre_db, PLACEHOLDER)

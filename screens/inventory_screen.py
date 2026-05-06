@@ -6,6 +6,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.button import Button
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
@@ -17,8 +18,14 @@ from config import (
     BOTON_PERSONAJES, BOTON_ARMAS, BOTON_RUNAS, BOTON_OBJETOS,
     MARCO_BOTON, BOTON_FORJAR,
     FONDO_HOME, FONDO_RUNA_ANOMALIA, FONDO_RUNA_GUARDIAN,
-    PLACEHOLDER, ICONO_POCION
+    PLACEHOLDER, ICONO_POCION,
+    icono_arma, icono_runa,
 )
+
+
+# ── Image que se comporta como botón (click en el icono = seleccionar item) ─
+class IconoClicable(ButtonBehavior, Image):
+    pass
 
 
 # ── Botón con marco decorativo PNG (reutilizado de forja_screen) ───────────
@@ -58,11 +65,10 @@ class BotonConMarco(FloatLayout):
 # ── Pestaña de categoría con PNG de fondo ──────────────────────────────────
 class PestañaCategoria(FloatLayout):
     """
-    Pestaña visual con dos capas:
-      0. Fondo oscuro permanente (rectángulo redondeado) para que el botón
-         siempre destaque sobre el fondo de pantalla, esté seleccionada o no.
+    Pestaña visual con varias capas:
+      0. Fondo oscuro permanente (siempre visible).
       1. PNG decorativo siempre a opacidad 1 (no se atenúan las inactivas).
-      2. Borde dorado que solo aparece en la pestaña activa.
+      2. Borde dorado SOLO en la pestaña activa.
       3. Botón transparente que captura el click.
     """
     def __init__(self, marco_path, categoria, on_press_callback, **kwargs):
@@ -79,7 +85,7 @@ class PestañaCategoria(FloatLayout):
             size=lambda *a: setattr(self._fondoRect, 'size', self.size)
         )
 
-        # Capa 1: PNG decorativo (siempre opacity=1, no se atenúa)
+        # Capa 1: PNG decorativo
         self.imagenMarco = Image(
             source=marco_path,
             allow_stretch=True,
@@ -90,17 +96,16 @@ class PestañaCategoria(FloatLayout):
         )
         self.add_widget(self.imagenMarco)
 
-        # Capa 2: borde dorado (solo visible cuando _activa=True)
+        # Capa 2: borde dorado (solo en pestaña activa)
         with self.canvas.after:
             Color(*COLOR_GUARDIANES)
             self._bordeLine = Line(
-                rounded_rectangle=(self.x, self.y, self.width, self.height, dp(8)),
+                rounded_rectangle=(0, 0, 0, 0, 0),
                 width=1.6
             )
-            self._bordeLine.points = []  # invisible al inicio
         self.bind(pos=self._actualizarBorde, size=self._actualizarBorde)
 
-        # Capa 3: botón transparente que recibe el click
+        # Capa 3: botón transparente
         self.boton = Button(
             background_normal='',
             background_color=(0, 0, 0, 0),
@@ -117,13 +122,10 @@ class PestañaCategoria(FloatLayout):
     def set_activa(self, activa: bool):
         self._activa = activa
         if activa:
-            # Borde dorado visible, marco a tope de brillo
             self._bordeLine.rounded_rectangle = (self.x, self.y, self.width, self.height, dp(8))
-            self.imagenMarco.opacity = 1.0
         else:
-            # Borde invisible, marco SIGUE en opacidad 1 (no se atenúa)
             self._bordeLine.rounded_rectangle = (0, 0, 0, 0, 0)
-            self.imagenMarco.opacity = 1.0
+        self.imagenMarco.opacity = 1.0
 
 
 class PantallaInventario(Screen):
@@ -131,7 +133,6 @@ class PantallaInventario(Screen):
         super().__init__(**kwargs)
         self.gm = gm
 
-        # Estado actual
         self.categoriaActual = 'personajes'
         self.itemSeleccionado = None
 
@@ -141,7 +142,7 @@ class PantallaInventario(Screen):
             self._bg_rect = Rectangle(source=FONDO_HOME, pos=self.pos, size=self.size)
         self.bind(pos=self._actualizarFondo, size=self._actualizarFondo)
 
-        # Velo oscuro para mejor contraste
+        # Velo oscuro
         with self.canvas.before:
             Color(0, 0, 0, 0.45)
             self._overlay = Rectangle(pos=self.pos, size=self.size)
@@ -153,7 +154,7 @@ class PantallaInventario(Screen):
         raiz = BoxLayout(orientation='vertical', spacing=0)
 
         # ══════════════════════════════════════════════════════════════════
-        # CABECERA (15%) — Imagen "INVENTARIO" decorada (ocupa todo el ancho)
+        # CABECERA (15%) — Imagen "INVENTARIO" (ocupa todo el ancho)
         # ══════════════════════════════════════════════════════════════════
         cabecera = Image(
             source=CABECERA_INVENTARIO,
@@ -173,7 +174,7 @@ class PantallaInventario(Screen):
             spacing=dp(4)
         )
 
-        self.pestañas = {}  # nombre → PestañaCategoria
+        self.pestañas = {}
         for nombre, png in [
             ('personajes', BOTON_PERSONAJES),
             ('armas',      BOTON_ARMAS),
@@ -217,11 +218,11 @@ class PantallaInventario(Screen):
         contenedorScroll.add_widget(scrollItems)
 
         # ══════════════════════════════════════════════════════════════════
-        # ZONA INFERIOR-IZQ Y DCHA (28%) — Preview + (Stats + Equipar)
+        # ZONA DETALLE (30%) — Preview + (Stats + Equipar)
         # ══════════════════════════════════════════════════════════════════
         zonaDetalle = BoxLayout(
             orientation='horizontal',
-            size_hint=(1, 0.28),
+            size_hint=(1, 0.30),
             padding=[dp(8), dp(4)],
             spacing=dp(8)
         )
@@ -259,7 +260,6 @@ class PantallaInventario(Screen):
             spacing=dp(6)
         )
 
-        # Caja de stats
         cajaStats = BoxLayout(
             orientation='vertical',
             size_hint=(1, 0.65),
@@ -287,10 +287,9 @@ class PantallaInventario(Screen):
         cajaStats.add_widget(self.lblStats)
         columnaStats.add_widget(cajaStats)
 
-        # Botón EQUIPAR (debajo de stats)
         self.botonEquipar = BotonConMarco(
             texto='EQUIPAR',
-            marco_path=MARCO_BOTON,  # reutilizamos el marco rúnico para que destaque
+            marco_path=MARCO_BOTON,
             on_press_callback=self.confirmarSeleccion,
             size_hint=(1, 0.35)
         )
@@ -300,11 +299,11 @@ class PantallaInventario(Screen):
         zonaDetalle.add_widget(columnaStats)
 
         # ══════════════════════════════════════════════════════════════════
-        # PANEL EXPLICATIVO (16%) — Descripción / lore del item
+        # PANEL EXPLICATIVO (18%) — Descripción / lore del item
         # ══════════════════════════════════════════════════════════════════
         panelExplicativo = BoxLayout(
             orientation='vertical',
-            size_hint=(1, 0.16),
+            size_hint=(1, 0.18),
             padding=[dp(12), dp(8)]
         )
         with panelExplicativo.canvas.before:
@@ -331,7 +330,7 @@ class PantallaInventario(Screen):
         panelExplicativo.add_widget(self.lblDescripcion)
 
         # ══════════════════════════════════════════════════════════════════
-        # BOTONERA INFERIOR (12%) — [VOLVER]   [FORJA]
+        # BOTONERA INFERIOR (12%) — [VOLVER] [FORJA]
         # ══════════════════════════════════════════════════════════════════
         botonera = BoxLayout(
             orientation='horizontal',
@@ -362,21 +361,7 @@ class PantallaInventario(Screen):
         botonera.add_widget(botonVolver)
         botonera.add_widget(botonForja)
 
-        # ══════════════════════════════════════════════════════════════════
-        # MONTAJE FINAL: cabecera (15) + pestañas (10) + scroll (15) +
-        #                detalle (28) + explicativo (16) + botonera (12) +
-        #                margen overhead (4) = 100%
-        # ══════════════════════════════════════════════════════════════════
-        # Como Kivy ajusta proporcionalmente si suman != 1, dejo el reparto
-        # exacto en suma 1.0 sin margen.
-        # 15+10+15+28+16+12 = 96 → ajustamos detalle a 30 y explicativo a 18 = 100
-        # Lo recalculo abajo:
-        # 15+10+15+30+18+12 = 100 ✓
-        # ══════════════════════════════════════════════════════════════════
-        # Aplico los tamaños correctos:
-        zonaDetalle.size_hint = (1, 0.30)
-        panelExplicativo.size_hint = (1, 0.18)
-
+        # Reparto: 15+10+15+30+18+12 = 100% ✓
         raiz.add_widget(cabecera)
         raiz.add_widget(filaPestañas)
         raiz.add_widget(contenedorScroll)
@@ -390,23 +375,18 @@ class PantallaInventario(Screen):
     def on_pre_enter(self, *args):
         self.cambiarCategoria(self.categoriaActual)
 
-    # ── Cambio de categoría (pestaña activa) ─────────────────────────────
-
     def cambiarCategoria(self, categoria: str):
         self.categoriaActual = categoria
         self.itemSeleccionado = None
 
-        # Actualizar pestañas activas/inactivas
         for nombre, pestaña in self.pestañas.items():
             pestaña.set_activa(nombre == categoria)
 
-        # Limpiar preview, stats y descripción
         self.imagenPreview.source = ''
         self.imagenPreview.opacity = 0
         self.lblStats.text = 'Selecciona un item'
         self.lblDescripcion.text = 'Selecciona un item para ver su descripción.'
 
-        # Cargar items de la categoría
         self._cargarItems(categoria)
 
     def _cargarItems(self, categoria: str):
@@ -432,22 +412,31 @@ class PantallaInventario(Screen):
             self.filaItems.add_widget(tarjeta)
 
     def _obtenerItems(self, categoria: str):
-        """Devuelve la lista de items según la categoría."""
         if categoria == 'personajes':
             return self.gm.get_personajes_jugador()
         elif categoria == 'armas':
-            return self.gm.get_armas_jugador()
+            items = self.gm.get_armas_jugador()
+            # Normaliza el icono via config en lugar de fiarse del campo BD.
+            # Motivo: la seed actual de M1 tiene .jpg para las armas B mientras
+            # que los ficheros reales son .png, y los nombres internos pueden
+            # cambiar sin que se actualice el campo icono. config.icono_arma()
+            # mantiene un mapeo fiable y único punto de actualización.
+            for it in items:
+                it['icono'] = icono_arma(it.get('nombre', ''))
+            return items
         elif categoria == 'runas':
-            return self.gm.get_runas_jugador()
+            items = self.gm.get_runas_jugador()
+            # Mismo razonamiento que con armas: el icono se resuelve via config
+            # (assets/logos/runas/...), no desde el campo BD.
+            for it in items:
+                it['icono'] = icono_runa(it.get('nombre', ''))
+            return items
         elif categoria == 'objetos':
             return self._obtenerObjetosVirtuales()
         return []
 
     def _obtenerObjetosVirtuales(self):
-        """
-        Construye una lista virtual de "objetos" a partir de los recursos del jugador.
-        Cada objeto tiene: nombre, cantidad, descripcion, tipo_objeto, usable
-        """
+        """Construye lista virtual de objetos a partir de los recursos del jugador."""
         recursos = self.gm.get_recursos() or {}
         objetos = []
         if recursos.get('pociones', 0) > 0:
@@ -457,7 +446,8 @@ class PantallaInventario(Screen):
                 'tipo_objeto':  'pocion',
                 'usable':       True,
                 'descripcion':  'Frasco de líquido carmesí. Restaura toda tu vida al instante. Úsalo entre nodos para llegar al jefe en plena forma.',
-                'inv_id':       None,  # los objetos no tienen inv_id
+                'icono':        'assets/logos/Logo_Pocion.png',
+                'inv_id':       None,
             })
         if recursos.get('transmutadores', 0) > 0:
             objetos.append({
@@ -466,6 +456,7 @@ class PantallaInventario(Screen):
                 'tipo_objeto':  'transmutador',
                 'usable':       False,
                 'descripcion':  'Catalizador arcano. Permite combinar dos runas básicas en la Forja para obtener una runa mixta.',
+                'icono':        'assets/logos/CargaTransmutacion.png',
                 'inv_id':       None,
             })
         if recursos.get('fragmentos_rojos', 0) > 0:
@@ -475,6 +466,7 @@ class PantallaInventario(Screen):
                 'tipo_objeto':  'fragmento_rojo',
                 'usable':       False,
                 'descripcion':  'Fragmento rojizo de un alma rota. Acumula 10 para invocar a un personaje sin gastar tickets.',
+                'icono':        'assets/logos/Fragmento_Rojo.png',
                 'inv_id':       None,
             })
         if recursos.get('fragmentos_azules', 0) > 0:
@@ -484,14 +476,20 @@ class PantallaInventario(Screen):
                 'tipo_objeto':  'fragmento_azul',
                 'usable':       False,
                 'descripcion':  'Esquirla azul de metal arcano. Acumula 10 para forjar un arma sin gastar tickets.',
+                'icono':        'assets/logos/Fragmento_Azul.png',
                 'inv_id':       None,
             })
         return objetos
 
-    # ── Crear una tarjeta de item del scroll ─────────────────────────────
+    # ── Tarjeta de item: icono encima + nombre/botón debajo ──────────────
 
     def _crearTarjeta(self, item: dict, categoria: str):
-        """Tarjeta clickable: muestra nombre del item, fija ancho de 110dp."""
+        """
+        Tarjeta clickable con dos zonas:
+          - Si hay icono → icono arriba (65%) + nombre/botón abajo (35%)
+          - Si no hay icono → solo botón con texto (100%)
+        Tanto el icono como el botón seleccionan el item al pulsarse.
+        """
         contenedor = BoxLayout(
             orientation='vertical',
             size_hint=(None, 1),
@@ -500,56 +498,81 @@ class PantallaInventario(Screen):
         )
 
         nombre = item.get('nombre', '?')
-        # Si es objeto, añadir cantidad
         if categoria == 'objetos':
-            nombre = f"{nombre} x{item.get('cantidad', 0)}"
+            etiqueta = f"{nombre} x{item.get('cantidad', 0)}"
+        else:
+            etiqueta = nombre
 
-        btn = Button(
-            text=nombre,
-            background_color=(0.08, 0.08, 0.15, 0.95),
-            background_normal='',
-            color=(0.9, 0.75, 0.3, 1),
-            font_size=sf(10),
-            bold=True,
-            size_hint=(1, 1)
-        )
-        btn.bind(on_press=lambda _, it=item: self.seleccionarItem(it))
-        contenedor.add_widget(btn)
+        icono = item.get('icono')
+
+        if icono:
+            img = IconoClicable(
+                source=icono,
+                allow_stretch=True,
+                keep_ratio=True,
+                mipmap=True,
+                size_hint=(1, 0.65),
+            )
+            img.bind(on_press=lambda _, it=item: self.seleccionarItem(it))
+            contenedor.add_widget(img)
+
+            btn = Button(
+                text=etiqueta,
+                background_color=(0.08, 0.08, 0.15, 0.95),
+                background_normal='',
+                color=(0.9, 0.75, 0.3, 1),
+                font_size=dp(10),
+                bold=True,
+                size_hint=(1, 0.35),
+            )
+            btn.bind(on_press=lambda _, it=item: self.seleccionarItem(it))
+            contenedor.add_widget(btn)
+        else:
+            # Sin icono → solo botón con texto
+            btn = Button(
+                text=etiqueta,
+                background_color=(0.08, 0.08, 0.15, 0.95),
+                background_normal='',
+                color=(0.9, 0.75, 0.3, 1),
+                font_size=dp(10),
+                bold=True,
+                size_hint=(1, 1),
+            )
+            btn.bind(on_press=lambda _, it=item: self.seleccionarItem(it))
+            contenedor.add_widget(btn)
+
         return contenedor
 
     # ── Selección de un item del scroll ──────────────────────────────────
 
     def seleccionarItem(self, item: dict):
         self.itemSeleccionado = item
-     
+
+        # Preview según categoría:
+        #   - Personajes → splash (sprite_id) si lo hay; si no, el icono circular
+        #   - Armas      → icono del arma
+        #   - Runas      → icono de la runa
+        #   - Objetos    → icono del objeto virtual
         if self.categoriaActual == 'personajes':
-            from database.repositories.personaje_repo import get_sprite_path
-            source = get_sprite_path(
-                item.get('faccion', ''),
-                item.get('clase', ''),
-                item.get('rareza', ''),
-                'splash'
-            )
+            ruta_imagen = item.get('sprite_id') or item.get('icono') or PLACEHOLDER
         else:
-            source = item.get('sprite_id') or PLACEHOLDER
-        self.imagenPreview.source = source
+            ruta_imagen = item.get('icono') or PLACEHOLDER
+
+        self.imagenPreview.source  = ruta_imagen
         self.imagenPreview.opacity = 1
         self.imagenPreview.reload()
 
-        # Stats según categoría
         self.lblStats.text = self._formatearStats(item)
 
-        # Descripción (genérica por ahora)
         descripcion = item.get('descripcion')
         if descripcion is None or descripcion == '':
             descripcion = self._descripcionGenerica(item)
         self.lblDescripcion.text = descripcion
 
     def _formatearStats(self, item: dict) -> str:
-        """Devuelve el texto de stats según la categoría actual."""
         if self.categoriaActual == 'personajes':
             return (
-                f"[b]{item.get('nombre', '?')}[/b]\n"
+                f"{item.get('nombre', '?')}\n"
                 f"Clase: {item.get('clase', '?').capitalize()}\n"
                 f"Rareza: {item.get('rareza', '?')}\n\n"
                 f"ATK: {item.get('atk_base', 0)}\n"
@@ -557,8 +580,7 @@ class PantallaInventario(Screen):
                 f"MAG: {item.get('magia_base', 0)}\n"
                 f"DES: {item.get('destreza_base', 0)}\n"
                 f"PV:  {item.get('pv_base', 0)}"
-            ).replace('[b]', '').replace('[/b]', '')
-
+            )
         elif self.categoriaActual == 'armas':
             return (
                 f"{item.get('nombre', '?')}\n"
@@ -568,7 +590,6 @@ class PantallaInventario(Screen):
                 f"+MAG: {item.get('bonus_magia', 0)}\n"
                 f"+DES: {item.get('bonus_destreza', 0)}"
             )
-
         elif self.categoriaActual == 'runas':
             return (
                 f"{item.get('nombre', '?')}\n"
@@ -578,7 +599,6 @@ class PantallaInventario(Screen):
                 f"+MAG: {item.get('bonus_magia', 0)}\n"
                 f"+DES: {item.get('bonus_destreza', 0)}"
             )
-
         elif self.categoriaActual == 'objetos':
             return (
                 f"{item.get('nombre', '?')}\n"
@@ -596,19 +616,17 @@ class PantallaInventario(Screen):
             return f"Runa de rareza {item.get('rareza', '?')}. Aplica sus efectos al equiparla."
         return ''
 
-    # ── Botón EQUIPAR (lógica contextual según categoría) ────────────────
+    # ── Botón EQUIPAR (lógica contextual) ────────────────────────────────
 
     def confirmarSeleccion(self, instance):
         if self.gm is None or self.itemSeleccionado is None:
             self._mostrarPopup('Sin selección', 'Elige un item antes de equipar.', (0.7, 0.3, 0.1, 1))
             return
 
-        # Caso especial: objetos (no tienen inv_id)
         if self.categoriaActual == 'objetos':
             self._usarObjeto(self.itemSeleccionado)
             return
 
-        # Personajes / armas / runas tienen inv_id
         inv_id = self.itemSeleccionado.get('inv_id')
         if inv_id is None:
             return
@@ -630,7 +648,7 @@ class PantallaInventario(Screen):
         self._cargarItems(self.categoriaActual)
 
     def _popupSlotRuna(self, inv_id: int):
-        """Popup que pregunta al jugador en qué slot equipar la runa."""
+        """Pregunta al jugador en qué slot equipar la runa."""
         modal = ModalView(size_hint=(0.7, 0.35), background_color=(0, 0, 0, 0))
 
         cont = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
@@ -680,7 +698,6 @@ class PantallaInventario(Screen):
         modal.open()
 
     def _usarObjeto(self, objeto: dict):
-        """Lógica de uso de objetos virtuales."""
         tipo = objeto.get('tipo_objeto', '')
 
         if tipo == 'pocion':
@@ -690,8 +707,6 @@ class PantallaInventario(Screen):
                                    'Has restaurado tu vida al máximo.',
                                    (0.2, 0.8, 0.3, 1))
                 self._cargarItems('objetos')
-                # Refrescar selección si la poción se gastó del todo
-                self.seleccionarItem(objeto)  # hace lo mejor que puede; si ya no hay, igual da
             else:
                 self._mostrarPopup('Sin pociones',
                                    'No tienes pociones disponibles.',

@@ -6,6 +6,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.button import Button
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
@@ -19,9 +20,15 @@ from config import (
     ICONO_TRANSMUTADOR,
     FLECHA_TRANSMUTAR_GUARDIAN, FLECHA_TRANSMUTAR_ANOMALIA,
     CABECERA_FORJA,
-    PLACEHOLDER
+    PLACEHOLDER,
+    icono_runa,
 )
 from widgets.componentes import BotonRedondeado
+
+
+# ── Image que se comporta como botón (click en el icono = asignar runa) ────
+class IconoClicable(ButtonBehavior, Image):
+    pass
 
 
 # ── Slot de runa visual (fondo PNG + icono de la runa superpuesto) ─────────
@@ -64,9 +71,10 @@ class SlotRunaVisual(FloatLayout):
 
     def asignar(self, runa: dict):
         self.runa = runa
-        # Cuando los iconos por runa estén listos, leer aquí:
-        # self.imagenRuna.source = runa.get('icono', PLACEHOLDER)
-        self.imagenRuna.source = PLACEHOLDER
+        # Resolvemos el icono via config.icono_runa() a partir del nombre
+        # interno de BD (RUNA_ATAQUE, RUNA_ACERO, etc.). Si no hay match,
+        # cae al PLACEHOLDER.
+        self.imagenRuna.source = icono_runa(runa.get('nombre', ''))
         self.imagenRuna.reload()
         self.imagenRuna.opacity = 1
 
@@ -400,18 +408,44 @@ class PantallaForja(Screen):
             return
 
         for runa in runas:
-            btn = BotonRedondeado(
-                text=runa.get('nombre', '?'),
-                bg_color=(0.08, 0.08, 0.15, 0.95),
-                text_color=(0.9, 0.75, 0.3, 1),
-                radius=8,
-                size_hint=(None, 1),
-                width=sw(100),
-                font_size=sf(10),
-                bold=True
-            )
-            btn.bind(on_press=lambda _, r=runa: self._asignarRuna(r))
-            self.filaRunas.add_widget(btn)
+            self.filaRunas.add_widget(self._crearTarjetaRuna(runa))
+
+    def _crearTarjetaRuna(self, runa: dict):
+        """
+        Tarjeta vertical: icono arriba + nombre debajo.
+        Tanto el icono como el botón de nombre asignan la runa al slot libre.
+        """
+        contenedor = BoxLayout(
+            orientation='vertical',
+            size_hint=(None, 1),
+            width=dp(90),
+            padding=[dp(4), dp(4)],
+            spacing=dp(2),
+        )
+
+        img = IconoClicable(
+            source=icono_runa(runa.get('nombre', '')),
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            size_hint=(1, 0.65),
+        )
+        img.bind(on_press=lambda _, r=runa: self._asignarRuna(r))
+        contenedor.add_widget(img)
+
+        btn = Button(
+            text=runa.get('nombre', '?'),
+            background_color=(0.08, 0.08, 0.15, 0.95),
+            background_normal='',
+            color=(0.9, 0.75, 0.3, 1),
+            font_size=dp(9),
+            bold=True,
+            size_hint=(1, 0.35),
+        )
+        btn.bind(on_press=lambda _, r=runa: self._asignarRuna(r))
+        contenedor.add_widget(btn)
+
+        return contenedor
 
     # ── Asignación / limpieza de slots ───────────────────────────────────
 
