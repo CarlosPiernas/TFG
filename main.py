@@ -1,16 +1,30 @@
 import os
 os.environ['KIVY_ORIENTATION'] = 'Portrait'
-from kivy.app import App
-from kivy.uix.screenmanager import ScreenManager
-from kivy.core.window import Window
-from kivy.utils import platform
+
 from kivy.config import Config
 Config.set('graphics', 'texture_min_filter', 'linear')
 Config.set('graphics', 'texture_mag_filter', 'linear')
 
+from kivy.core.window import Window
+from kivy.app import App
+from kivy.uix.screenmanager import ScreenManager
+from kivy.utils import platform
+
+
+def get_scale_factor() -> float:
+    """Return the OS display scaling factor (e.g. 1.25 for 125 %).
+    Uses GetDpiForSystem on Windows; falls back to 1.0 on other platforms
+    or if the call fails."""
+    try:
+        import ctypes
+        dpi = ctypes.windll.user32.GetDpiForSystem()
+        return dpi / 96.0
+    except Exception:
+        return 1.0
 
 if platform not in ('android', 'ios'):
-    Window.size = (400, 800)
+    _scale = get_scale_factor()
+    Window.size = (int(400 / _scale), int(800 / _scale))
     Window.resizable = False
 else:
     Window.fullscreen = 'auto'
