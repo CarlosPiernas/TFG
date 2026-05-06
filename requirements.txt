@@ -16,3 +16,4 @@ pywin32==311
 requests==2.32.5
 urllib3==2.6.3
 firebase-admin
+hypothesis==6.131.18

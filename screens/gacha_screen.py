@@ -293,22 +293,7 @@ class PantallaGacha(Screen):
         self._refrescar_fondo()
         self._refrescar_recursos()
         self._refrescar_pity()
-        self._precargar_frames()
         self._iniciar_animacion()
-
-    def _precargar_frames(self):
-        import threading
-        from kivy.core.image import Image as CoreImage
-
-        def cargar():
-            for lista in [self._frames_armas, self._frames_personajes, self._frames_guardianes]:
-                for path in lista:
-                    try:
-                        CoreImage(path, mipmap=True)
-                    except Exception:
-                        pass
-
-        threading.Thread(target=cargar, daemon=True).start()
 
     def on_leave(self, *args):
         if self._anim_event:
