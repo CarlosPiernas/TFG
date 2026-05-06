@@ -19,7 +19,9 @@ from config import (
     MARCO_BOTON, BOTON_FORJAR,
     FONDO_HOME, FONDO_RUNA_ANOMALIA, FONDO_RUNA_GUARDIAN,
     PLACEHOLDER, ICONO_POCION,
-    icono_arma, icono_runa,
+    icono_arma, nombre_arma, lore_arma,
+    icono_runa, nombre_runa, lore_runa,
+    icono_personaje, nombre_personaje, lore_personaje,
 )
 
 
@@ -413,26 +415,35 @@ class PantallaInventario(Screen):
 
     def _obtenerItems(self, categoria: str):
         if categoria == 'personajes':
-            return self.gm.get_personajes_jugador()
+            items = self.gm.get_personajes_jugador()
+            for it in items:
+                nombre_db = it.get('nombre', '')
+                it['icono']          = icono_personaje(nombre_db)
+                it['nombre_display'] = nombre_personaje(nombre_db)
+                it['descripcion']    = lore_personaje(nombre_db)
+            return items
+
         elif categoria == 'armas':
             items = self.gm.get_armas_jugador()
-            # Normaliza el icono via config en lugar de fiarse del campo BD.
-            # Motivo: la seed actual de M1 tiene .jpg para las armas B mientras
-            # que los ficheros reales son .png, y los nombres internos pueden
-            # cambiar sin que se actualice el campo icono. config.icono_arma()
-            # mantiene un mapeo fiable y único punto de actualización.
             for it in items:
-                it['icono'] = icono_arma(it.get('nombre', ''))
+                nombre_db = it.get('nombre', '')
+                it['icono']          = icono_arma(nombre_db)
+                it['nombre_display'] = nombre_arma(nombre_db)
+                it['descripcion']    = lore_arma(nombre_db)
             return items
+
         elif categoria == 'runas':
             items = self.gm.get_runas_jugador()
-            # Mismo razonamiento que con armas: el icono se resuelve via config
-            # (assets/logos/runas/...), no desde el campo BD.
             for it in items:
-                it['icono'] = icono_runa(it.get('nombre', ''))
+                nombre_db = it.get('nombre', '')
+                it['icono']          = icono_runa(nombre_db)
+                it['nombre_display'] = nombre_runa(nombre_db)
+                it['descripcion']    = lore_runa(nombre_db)
             return items
+
         elif categoria == 'objetos':
             return self._obtenerObjetosVirtuales()
+
         return []
 
     def _obtenerObjetosVirtuales(self):
@@ -441,55 +452,53 @@ class PantallaInventario(Screen):
         objetos = []
         if recursos.get('pociones', 0) > 0:
             objetos.append({
-                'nombre':       'Poción',
-                'cantidad':     recursos.get('pociones', 0),
-                'tipo_objeto':  'pocion',
-                'usable':       True,
-                'descripcion':  'Frasco de líquido carmesí. Restaura toda tu vida al instante. Úsalo entre nodos para llegar al jefe en plena forma.',
-                'icono':        'assets/logos/Logo_Pocion.png',
-                'inv_id':       None,
+                'nombre':        'Poción',
+                'nombre_display': 'Poción',
+                'cantidad':      recursos.get('pociones', 0),
+                'tipo_objeto':   'pocion',
+                'usable':        True,
+                'descripcion':   'Frasco de líquido carmesí. Restaura toda tu vida al instante. Úsalo entre nodos para llegar al jefe en plena forma.',
+                'icono':         'assets/logos/Logo_Pocion.png',
+                'inv_id':        None,
             })
         if recursos.get('transmutadores', 0) > 0:
             objetos.append({
-                'nombre':       'Transmutador',
-                'cantidad':     recursos.get('transmutadores', 0),
-                'tipo_objeto':  'transmutador',
-                'usable':       False,
-                'descripcion':  'Catalizador arcano. Permite combinar dos runas básicas en la Forja para obtener una runa mixta.',
-                'icono':        'assets/logos/CargaTransmutacion.png',
-                'inv_id':       None,
+                'nombre':        'Transmutador',
+                'nombre_display': 'Transmutador',
+                'cantidad':      recursos.get('transmutadores', 0),
+                'tipo_objeto':   'transmutador',
+                'usable':        False,
+                'descripcion':   'Catalizador arcano. Permite combinar dos runas básicas en la Forja para obtener una runa mixta.',
+                'icono':         'assets/logos/CargaTransmutacion.png',
+                'inv_id':        None,
             })
         if recursos.get('fragmentos_rojos', 0) > 0:
             objetos.append({
-                'nombre':       'Fragmento Rojo',
-                'cantidad':     recursos.get('fragmentos_rojos', 0),
-                'tipo_objeto':  'fragmento_rojo',
-                'usable':       False,
-                'descripcion':  'Fragmento rojizo de un alma rota. Acumula 10 para invocar a un personaje sin gastar tickets.',
-                'icono':        'assets/logos/Fragmento_Rojo.png',
-                'inv_id':       None,
+                'nombre':        'Fragmento Rojo',
+                'nombre_display': 'Fragmento Rojo',
+                'cantidad':      recursos.get('fragmentos_rojos', 0),
+                'tipo_objeto':   'fragmento_rojo',
+                'usable':        False,
+                'descripcion':   'Fragmento rojizo de un alma rota. Acumula 50 para invocar a un personaje sin gastar tickets.',
+                'icono':         'assets/logos/Fragmento_Rojo.png',
+                'inv_id':        None,
             })
         if recursos.get('fragmentos_azules', 0) > 0:
             objetos.append({
-                'nombre':       'Fragmento Azul',
-                'cantidad':     recursos.get('fragmentos_azules', 0),
-                'tipo_objeto':  'fragmento_azul',
-                'usable':       False,
-                'descripcion':  'Esquirla azul de metal arcano. Acumula 10 para forjar un arma sin gastar tickets.',
-                'icono':        'assets/logos/Fragmento_Azul.png',
-                'inv_id':       None,
+                'nombre':        'Fragmento Azul',
+                'nombre_display': 'Fragmento Azul',
+                'cantidad':      recursos.get('fragmentos_azules', 0),
+                'tipo_objeto':   'fragmento_azul',
+                'usable':        False,
+                'descripcion':   'Esquirla azul de metal arcano. Acumula 50 para forjar un arma sin gastar tickets.',
+                'icono':         'assets/logos/Fragmento_Azul.png',
+                'inv_id':        None,
             })
         return objetos
 
     # ── Tarjeta de item: icono encima + nombre/botón debajo ──────────────
 
     def _crearTarjeta(self, item: dict, categoria: str):
-        """
-        Tarjeta clickable con dos zonas:
-          - Si hay icono → icono arriba (65%) + nombre/botón abajo (35%)
-          - Si no hay icono → solo botón con texto (100%)
-        Tanto el icono como el botón seleccionan el item al pulsarse.
-        """
         contenedor = BoxLayout(
             orientation='vertical',
             size_hint=(None, 1),
@@ -497,11 +506,12 @@ class PantallaInventario(Screen):
             padding=[dp(4), dp(4)]
         )
 
-        nombre = item.get('nombre', '?')
+        # Usa el nombre bonito si existe, si no el interno de BD
+        nombre_display = item.get('nombre_display') or item.get('nombre', '?')
         if categoria == 'objetos':
-            etiqueta = f"{nombre} x{item.get('cantidad', 0)}"
+            etiqueta = f"{nombre_display} x{item.get('cantidad', 0)}"
         else:
-            etiqueta = nombre
+            etiqueta = nombre_display
 
         icono = item.get('icono')
 
@@ -528,7 +538,6 @@ class PantallaInventario(Screen):
             btn.bind(on_press=lambda _, it=item: self.seleccionarItem(it))
             contenedor.add_widget(btn)
         else:
-            # Sin icono → solo botón con texto
             btn = Button(
                 text=etiqueta,
                 background_color=(0.08, 0.08, 0.15, 0.95),
@@ -548,11 +557,7 @@ class PantallaInventario(Screen):
     def seleccionarItem(self, item: dict):
         self.itemSeleccionado = item
 
-        # Preview según categoría:
-        #   - Personajes → splash (sprite_id) si lo hay; si no, el icono circular
-        #   - Armas      → icono del arma
-        #   - Runas      → icono de la runa
-        #   - Objetos    → icono del objeto virtual
+        # Preview: personajes usan get_sprite_path igual que antes
         if self.categoriaActual == 'personajes':
             from database.repositories.personaje_repo import get_sprite_path
             ruta_imagen = get_sprite_path(
@@ -570,15 +575,19 @@ class PantallaInventario(Screen):
 
         self.lblStats.text = self._formatearStats(item)
 
+        # Muestra el lore inyectado en _obtenerItems; si está vacío, fallback genérico
         descripcion = item.get('descripcion')
-        if descripcion is None or descripcion == '':
+        if not descripcion:
             descripcion = self._descripcionGenerica(item)
         self.lblDescripcion.text = descripcion
 
     def _formatearStats(self, item: dict) -> str:
+        # Encabezado con nombre bonito si existe
+        nombre_display = item.get('nombre_display') or item.get('nombre', '?')
+
         if self.categoriaActual == 'personajes':
             return (
-                f"{item.get('nombre', '?')}\n"
+                f"{nombre_display}\n"
                 f"Clase: {item.get('clase', '?').capitalize()}\n"
                 f"Rareza: {item.get('rareza', '?')}\n\n"
                 f"ATK: {item.get('atk_base', 0)}\n"
@@ -589,7 +598,7 @@ class PantallaInventario(Screen):
             )
         elif self.categoriaActual == 'armas':
             return (
-                f"{item.get('nombre', '?')}\n"
+                f"{nombre_display}\n"
                 f"Rareza: {item.get('rareza', '?')}\n\n"
                 f"+ATK: {item.get('bonus_atk', 0)}\n"
                 f"+DEF: {item.get('bonus_def', 0)}\n"
@@ -598,7 +607,7 @@ class PantallaInventario(Screen):
             )
         elif self.categoriaActual == 'runas':
             return (
-                f"{item.get('nombre', '?')}\n"
+                f"{nombre_display}\n"
                 f"Rareza: {item.get('rareza', '?')}\n\n"
                 f"+ATK: {item.get('bonus_atk', 0)}\n"
                 f"+DEF: {item.get('bonus_def', 0)}\n"
@@ -607,7 +616,7 @@ class PantallaInventario(Screen):
             )
         elif self.categoriaActual == 'objetos':
             return (
-                f"{item.get('nombre', '?')}\n"
+                f"{nombre_display}\n"
                 f"Cantidad: {item.get('cantidad', 0)}\n\n"
                 f"Tipo: Consumible"
             )
@@ -639,8 +648,9 @@ class PantallaInventario(Screen):
 
         if self.categoriaActual == 'personajes':
             self.gm.cambiar_personaje_activo(inv_id)
+            nombre_display = self.itemSeleccionado.get('nombre_display') or self.itemSeleccionado.get('nombre', '?')
             self._mostrarPopup('Personaje activo',
-                               f"{self.itemSeleccionado.get('nombre','?')} es ahora tu personaje activo.",
+                               f"{nombre_display} es ahora tu personaje activo.",
                                (0.2, 0.8, 0.3, 1))
 
         elif self.categoriaActual == 'armas':

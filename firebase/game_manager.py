@@ -56,16 +56,16 @@ class GameManager:
     def __init__(self):
         initialize_db()
         run_seed()
-        self._mapa_repo = MapaRepo()
-        self._equip_repo = EquipamientoRepo()
+        self._mapa_repo    = MapaRepo()
+        self._equip_repo   = EquipamientoRepo()
         self._enemy_loader = EnemyLoader()
-        self._encuentro = Encuentro()
-        self.nodo_seleccionado = None  # lo setea map_screen antes de navegar a combate
-        self.faccion = None
+        self._encuentro    = Encuentro()
+        self.nodo_seleccionado   = None
+        self.faccion             = None
         self.personaje_activo_id = None
-        self.jugador_id = 1
-         # Recuperar facción y personaje activo guardados
-        self.faccion = self._cargar_faccion()
+        self.jugador_id          = 1
+        # Recuperar facción y personaje activo guardados
+        self.faccion             = self._cargar_faccion()
         self.personaje_activo_id = self._cargar_personaje_activo()
         print("[GameManager] Inicializado correctamente.")
 
@@ -127,8 +127,8 @@ class GameManager:
 
         print(f"[DEBUG] faccion={self.faccion}, personaje_activo_id={self.personaje_activo_id}")
         print(f"[GameManager] Facción: {self.faccion}. "
-            f"Personaje inicial: {personaje_b['nombre']} (ID inv: {self.personaje_activo_id}) "
-            f"Vida inicial: {pv_inicial}/{pv_inicial}")
+              f"Personaje inicial: {personaje_b['nombre']} (ID inv: {self.personaje_activo_id}) "
+              f"Vida inicial: {pv_inicial}/{pv_inicial}")
 
     # ═══════════════════════════════════
     # PERSONAJE ACTIVO
@@ -148,35 +148,51 @@ class GameManager:
         datos = personaje_repo.get_by_id(catalogo_id)
         if datos is None:
             return None
-        equipo = self._equip_repo.get_equipo_de_personaje(self.personaje_activo_id)
-        datos["equipo"] = equipo
-        datos["inv_id"] = self.personaje_activo_id
+        equipo        = self._equip_repo.get_equipo_de_personaje(self.personaje_activo_id)
+        datos["equipo"]  = equipo
+        datos["inv_id"]  = self.personaje_activo_id
         return datos
 
     def cambiar_personaje_activo(self, inv_id: int):
-        # Al cambiar de personaje activo, su vida_max es distinta y la vida persistida
-        # del anterior deja de tener sentido. Reiniciamos a vida llena del nuevo.
+        """
+        Cambia el personaje activo SIN restaurar la vida del jugador.
+
+        La vida es un recurso del JUGADOR, no del personaje. Si el jugador
+        tiene 50 HP y cambia de personaje, sigue teniendo 50 HP. Solo las
+        pociones restauran vida. El único ajuste permitido es capear
+        vida_actual al nuevo vida_max si el personaje nuevo tiene menos PV.
+        """
         self.personaje_activo_id = inv_id
         recursos_repo.set_personaje_activo_id(inv_id)
+
         info = self.get_personaje_activo_info()
-        if info is not None:
-            pv = info.get("pv_base", 0)
-            # Aplicamos también bonus de PV del equipo actual del nuevo personaje
-            equipo = info.get("equipo", [])
-            inv_items = {it["id"]: it for it in inventario_repo.get_inventario()}
-            for slot in equipo:
-                inv_item = inv_items.get(slot.get("item_inv_id"))
-                if inv_item is None:
-                    continue
-                if inv_item["tipo"] == "arma":
-                    datos = arma_repo.get_by_id(inv_item["catalogo_id"])
-                elif inv_item["tipo"] == "runa":
-                    datos = runa_repo.get_by_id(inv_item["catalogo_id"])
-                else:
-                    datos = None
-                if datos:
-                    pv += datos.get("bonus_pv", 0)
-            recursos_repo.set_vida(pv, pv)
+        if info is None:
+            return
+
+        # Calcular vida_max del nuevo personaje (pv_base + bonuses de su equipo)
+        pv_max    = info.get("pv_base", 0)
+        equipo    = info.get("equipo", [])
+        inv_items = {it["id"]: it for it in inventario_repo.get_inventario()}
+        for slot in equipo:
+            inv_item = inv_items.get(slot.get("item_inv_id"))
+            if inv_item is None:
+                continue
+            if inv_item["tipo"] == "arma":
+                datos = arma_repo.get_by_id(inv_item["catalogo_id"])
+            elif inv_item["tipo"] == "runa":
+                datos = runa_repo.get_by_id(inv_item["catalogo_id"])
+            else:
+                datos = None
+            if datos:
+                pv_max += datos.get("bonus_pv", 0)
+
+        # Conservar vida_actual tal como estaba en BD.
+        # Si el nuevo personaje tiene menos PV máximo, se capea hacia abajo.
+        # Nunca se restaura: la única forma de recuperar vida es con pociones.
+        vida_db     = recursos_repo.get_vida()
+        vida_actual = min(vida_db.get("vida_actual", pv_max), pv_max)
+
+        recursos_repo.set_vida(vida_actual, pv_max)
 
     # ═══════════════════════════════════
     # INVENTARIO
@@ -258,7 +274,7 @@ class GameManager:
         nodos = self._mapa_repo.get_todos_nodos()
         resultado = []
         for nodo in nodos:
-            nodo_dict = dict(nodo)
+            nodo_dict   = dict(nodo)
             enemigo_info = self._enemy_loader.get_info_nodo(nodo["nodo_id"])
             if enemigo_info:
                 nodo_dict["enemigo"] = enemigo_info
@@ -269,7 +285,7 @@ class GameManager:
         nodo = self._mapa_repo.get_nodo(nodo_id)
         if nodo is None:
             return None
-        nodo_dict = dict(nodo)
+        nodo_dict    = dict(nodo)
         enemigo_info = self._enemy_loader.get_info_nodo(nodo_id)
         if enemigo_info:
             nodo_dict["enemigo"] = enemigo_info
@@ -287,9 +303,6 @@ class GameManager:
             return {"victoria": False, "log": ["Nodo bloqueado."], "recompensas": None}
 
         # ── Bloqueo por vida insuficiente ──────────────────────────────
-        # Si el jugador llega con 0 vida (derrota previa), no puede pelear.
-        # Debe usar una poción antes. Devolvemos flag específico para que
-        # la UI muestre el mensaje correcto sin marcar "derrota".
         vida_db = recursos_repo.get_vida()
         if vida_db["vida_max"] > 0 and vida_db["vida_actual"] <= 0:
             recursos = recursos_repo.get_recursos() or {}
@@ -327,10 +340,7 @@ class GameManager:
         else:
             victoria = jugador.esta_vivo()
 
-        # ── Persistencia de vida tras combate ──────────────────────────
-        # Si pierde, queda con vida 0 → el jugador deberá usar una poción
-        # antes de poder combatir de nuevo (bloqueo gestionado al inicio).
-        # Si gana, se persiste la vida resultante para el siguiente nodo.
+        # Persistencia de vida tras combate
         recursos_repo.set_vida(jugador.vida, jugador.vida_max)
 
         recompensas = None
@@ -369,35 +379,30 @@ class GameManager:
                     if inv_item["tipo"] == "arma":
                         arma_data = arma_repo.get_by_id(inv_item["catalogo_id"])
                         if arma_data:
-                            jugador.atk += arma_data.get("bonus_atk", 0)
-                            jugador.defensa += arma_data.get("bonus_def", 0)
-                            jugador.magia += arma_data.get("bonus_magia", 0)
+                            jugador.atk      += arma_data.get("bonus_atk", 0)
+                            jugador.defensa  += arma_data.get("bonus_def", 0)
+                            jugador.magia    += arma_data.get("bonus_magia", 0)
                             jugador.destreza += arma_data.get("bonus_destreza", 0)
                             bv = arma_data.get("bonus_pv", 0)
-                            jugador.vida += bv
+                            jugador.vida     += bv
                             jugador.vida_max += bv
                     elif inv_item["tipo"] == "runa":
                         runa_data = runa_repo.get_by_id(inv_item["catalogo_id"])
                         if runa_data:
-                            jugador.atk += runa_data.get("bonus_atk", 0)
-                            jugador.defensa += runa_data.get("bonus_def", 0)
-                            jugador.magia += runa_data.get("bonus_magia", 0)
+                            jugador.atk      += runa_data.get("bonus_atk", 0)
+                            jugador.defensa  += runa_data.get("bonus_def", 0)
+                            jugador.magia    += runa_data.get("bonus_magia", 0)
                             jugador.destreza += runa_data.get("bonus_destreza", 0)
                             bv = runa_data.get("bonus_pv", 0)
-                            jugador.vida += bv
+                            jugador.vida     += bv
                             jugador.vida_max += bv
                     break
 
         # ── Sobrescribir vida con la persistida en BD ──────────────────
-        # En este punto jugador.vida == jugador.vida_max (recién creado con bonuses).
-        # Si hay vida persistida válida, la usamos. Si no, persistimos la vida llena.
         vida_db = recursos_repo.get_vida()
         if vida_db["vida_max"] > 0 and vida_db["vida_actual"] > 0:
-            # Usamos vida_actual de BD; vida_max se mantiene la calculada con bonuses
-            # (puede haber cambiado al equipar/desequipar entre nodos)
             jugador.vida = min(vida_db["vida_actual"], jugador.vida_max)
         else:
-            # Primera vez o derrota previa restaurada: persistimos vida llena
             recursos_repo.set_vida(jugador.vida_max, jugador.vida_max)
 
         print(f"[DEBUG] _crear_jugador personaje_activo_id={self.personaje_activo_id} vida={jugador.vida}/{jugador.vida_max}")
@@ -433,11 +438,11 @@ class GameManager:
         # Runa aleatoria en nodos 4+
         if nodo_id in NODOS_DROP_RUNA:
             RUNAS_BASICAS = ["RUNA_ATAQUE", "RUNA_MAGIA", "RUNA_DEFENSA", "RUNA_DESTREZA"]
-            nombre_runa = random.choice(RUNAS_BASICAS)
-            runa = runa_repo.get_by_nombre(nombre_runa)
+            nombre_runa_drop = random.choice(RUNAS_BASICAS)
+            runa = runa_repo.get_by_nombre(nombre_runa_drop)
             if runa:
                 inventario_repo.agregar_item(self.jugador_id, runa["id"], "runa")
-                recompensas["runa"] = nombre_runa
+                recompensas["runa"] = nombre_runa_drop
 
         # Transmutador en nodos 5 y 10
         if nodo_id in NODOS_TRANSMUTADOR:
@@ -454,7 +459,6 @@ class GameManager:
         pociones = recursos_repo.get_pociones()
         if pociones and pociones["pociones"] > 0:
             recursos_repo.add_recurso("pociones", -1)
-            # Restaurar vida al máximo persistido
             recursos_repo.restaurar_vida()
             return True
         return False
@@ -465,16 +469,16 @@ class GameManager:
 
     def estado_completo(self) -> dict:
         return {
-            "faccion": self.faccion,
+            "faccion":         self.faccion,
             "personaje_activo": self.get_personaje_activo_info(),
-            "recursos": self.get_recursos(),
-            "personajes": len(self.get_personajes_jugador()),
-            "armas": len(self.get_armas_jugador()),
-            "mapa": self.get_mapa(),
-            "firebase": self._enemy_loader.estado(),
+            "recursos":        self.get_recursos(),
+            "personajes":      len(self.get_personajes_jugador()),
+            "armas":           len(self.get_armas_jugador()),
+            "mapa":            self.get_mapa(),
+            "firebase":        self._enemy_loader.estado(),
         }
+
     def _cargar_faccion(self) -> str | None:
-        # Lee la facción guardada en BD para restaurar el estado entre sesiones
         recursos = recursos_repo.get_recursos()
         if recursos:
             return recursos.get('faccion')
@@ -488,7 +492,6 @@ class GameManager:
             activo_id = recursos.get('personaje_activo_id', 0)
             if activo_id and activo_id > 0:
                 return activo_id
-        # Fallback: primer personaje del inventario
         inv = inventario_repo.get_inventario_by_tipo('personaje')
         return inv[0]['id'] if inv else None
 
@@ -507,7 +510,6 @@ class GameManager:
     def transmutar(self, nombre_runa_1: str, nombre_runa_2: str) -> dict:
         from logic.Clases.stat import RECETAS_TRANSMUTADOR, RESULTADO_MEZCLA_INVALIDA
 
-        # Validar que el jugador tiene ambas runas en el inventario
         inv_runas = inventario_repo.get_inventario_by_tipo('runa')
         nombres_inventario = []
         for item in inv_runas:
@@ -515,7 +517,6 @@ class GameManager:
             if datos:
                 nombres_inventario.append((item['id'], datos['nombre'].upper()))
 
-        # Buscar inv_id de cada runa
         id_runa1 = None
         id_runa2 = None
         usados   = set()
@@ -536,25 +537,18 @@ class GameManager:
         if recursos_repo.get_transmutadores() <= 0:
             return {"ok": False, "mensaje": "No tienes cargas de transmutador."}
 
-        # Calcular resultado — quitar prefijo RUNA_ para buscar en recetas
         nombre_runa_1_clean = nombre_runa_1.upper().replace('RUNA_', '')
         nombre_runa_2_clean = nombre_runa_2.upper().replace('RUNA_', '')
-        clave           = frozenset([nombre_runa_1_clean, nombre_runa_2_clean])
+        clave            = frozenset([nombre_runa_1_clean, nombre_runa_2_clean])
         nombre_resultado = RECETAS_TRANSMUTADOR.get(clave, RESULTADO_MEZCLA_INVALIDA)
 
-        # Buscar la runa resultante en el catálogo con prefijo RUNA_
         runa_resultado = runa_repo.get_by_nombre(f"RUNA_{nombre_resultado}")
         if runa_resultado is None:
             return {"ok": False, "mensaje": f"Runa resultado 'RUNA_{nombre_resultado}' no encontrada en el catálogo."}
 
-        # Consumir las dos runas del inventario
         inventario_repo.eliminar_item(id_runa1)
         inventario_repo.eliminar_item(id_runa2)
-
-        # Consumir 1 transmutador
         recursos_repo.consumir_transmutador()
-
-        # Añadir la runa resultado al inventario
         inventario_repo.agregar_item(self.jugador_id, runa_resultado['id'], 'runa')
 
         es_valida = nombre_resultado != RESULTADO_MEZCLA_INVALIDA
@@ -567,6 +561,7 @@ class GameManager:
                 f"{nombre_runa_1} + {nombre_runa_2} → RUNA_{nombre_resultado}"
             ),
         }
+
     # ═══════════════════════════════════
     # TIENDA
     # ═══════════════════════════════════
