@@ -18,18 +18,18 @@ from config import (
 )
 
 POSICIONES_MAPA1 = [
-    (0.5,  0.12),
-    (0.25, 0.28),
-    (0.65, 0.45),
-    (0.35, 0.62),
-    (0.5,  0.82),
+    (0.5,  0.12),   # nodo 1 — bien
+    (0.32, 0.35),   # nodo 2 — más a la izquierda
+    (0.32, 0.50),   # nodo 3 — ligeramente a la derecha
+    (0.65, 0.62),   # nodo 4 — más a la derecha
+    (0.5,  0.82),   # nodo 5 — bien
 ]
 
 POSICIONES_MAPA2 = [
     (0.5,  0.12),
-    (0.3,  0.28),
-    (0.65, 0.44),
-    (0.35, 0.62),
+    (0.32, 0.35),   # nodo 2 — más a la izquierda
+    (0.32, 0.50),   # nodo 3 — ligeramente a la derecha
+    (0.65, 0.62),   # nodo 4 — más a la derecha
     (0.5,  0.82),
 ]
 
@@ -70,7 +70,7 @@ class _NodoWidget(FloatLayout):
         self.img.reload()
 
     def _pulsar(self, *args):
-        if not self.completado:
+        if self.gm:
             self.gm.nodo_seleccionado = self.nodo_id
             self.navegarCombate()
 
@@ -193,7 +193,7 @@ class PantallaMapa(Screen):
             nodo_id    = nodo_data.get('nodo_id', nodo_idx + 1)
             disponible = estado == 'disponible'
 
-            tam = dp(65) if i == 4 else dp(55)  # jefe más grande
+            tam = dp(90) if i == 4 else dp(75)  # jefe más grande
 
             nodo = _NodoWidget(
                 nodo_id=nodo_id,
@@ -205,7 +205,7 @@ class PantallaMapa(Screen):
                 size_hint=(None, None),
                 size=(tam, tam),
                 pos_hint={'center_x': px, 'center_y': py},
-                opacity=1.0 if (completado or disponible) else 0.45
+                opacity=1.0 if (completado or disponible) else 0.75
             )
             self._contenedorNodos.add_widget(nodo)
             self._nodos.append(nodo)
@@ -214,17 +214,12 @@ class PantallaMapa(Screen):
         self._actualizar_flechas()
 
     def _actualizar_flechas(self):
-        # Flecha arriba: visible en página 0 si el nodo 5 está completado
-        nodos_bd   = self.gm.get_mapa() if self.gm else []
-        nodo5_done = len(nodos_bd) > 4 and nodos_bd[4].get('estado') == 'completado'
-        nodo10_idx = 9
-
         if self._pagina == 0:
-            self.btnArriba.opacity  = 1 if nodo5_done else 0
-            self.btnAbajo.opacity   = 0
+            self.btnArriba.opacity = 1
+            self.btnAbajo.opacity  = 0
         else:
-            self.btnArriba.opacity  = 0
-            self.btnAbajo.opacity   = 1
+            self.btnArriba.opacity = 0
+            self.btnAbajo.opacity  = 1
 
     # ── Cambio de página con animación ───────────────────────────────────────
 
