@@ -178,6 +178,15 @@ def nombre_arma(nombre_db: str) -> str:
 
 def lore_arma(nombre_db: str) -> str:
     return ARMA_LORE.get(nombre_db, '')
+# Mapa
+FONDO_MAPA1_ANOMALIAS  = 'assets/fondos/Fondo_mapa1_Anomalias.png'
+FONDO_MAPA2_ANOMALIAS  = 'assets/fondos/Fondo_mapa2_Anomalias.png'
+FONDO_MAPA1_GUARDIANES = 'assets/fondos/Fondo_mapa1_Guardianes.png'
+FONDO_MAPA2_GUARDIANES = 'assets/fondos/Fondo_mapa2_Guardianes.png'
+PORTAL_ANOMALIAS       = 'assets/logos/Portal_anomalias.png'
+PORTAL_GUARDIANES      = 'assets/logos/Portal_guardianes.png'
+FLECHA_ARRIBA          = 'assets/logos/flecha_arriba.png'
+FLECHA_ABAJO           = 'assets/logos/flecha_abajo.png'
 
 
 # ══════════════════════════════════════════════════════════════════════════════
