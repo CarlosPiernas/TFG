@@ -9,7 +9,7 @@ def hex_to_kivy(hex_color):
 FONDO_PRINCIPAL  = hex_to_kivy('#0f0f1f')
 PANEL_OSCURO     = hex_to_kivy('#1a2130')
 PANEL_MEDIO      = hex_to_kivy('#212b3b')
-COLOR_ANOMALIAS  = hex_to_kivy("#720998")
+COLOR_ANOMALIAS  = hex_to_kivy("#B37DC6")
 COLOR_GUARDIANES = hex_to_kivy('#ffbf00')
 BLANCO           = hex_to_kivy('#ffffff')
 GRIS             = hex_to_kivy('#808080')
@@ -18,6 +18,9 @@ COLOR_VIDA       = hex_to_kivy('#00cc33')
 COLOR_VIDA_MEDIA = hex_to_kivy('#ff9900')
 COLOR_VIDA_BAJA  = hex_to_kivy('#cc2222')
 COLOR_STATS      = hex_to_kivy('#ffffff')
+
+#Fondos Combate Nodo
+FONDO_NODO_1_4 = 'assets/fondos/FondosNodos/Nodo1-4Guardianes.JPg'
 
 # Moneda e iconos de navegación
 ICONO_MONEDA     = 'assets/logos/Moneda.png'
