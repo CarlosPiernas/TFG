@@ -20,16 +20,36 @@ from widgets.componentes import BotonRedondeado
 
 # Textos informativos de cada facción
 INFO_GUARDIANES = (
-    "GUARDIANES\nDEL ESPACIO TIEMPO\n\n"
-    "Protectores ancestrales.\n"
-    "Tecnología y magia milenaria\n"
-    "al servicio del orden."
+    "Guardianes\n\n"
+    "Los protecctores de su.\n"
+    "realidad desde sus inicios.\n"
+    "\n"
+    "Tras las constantes amenazas\n"
+    "del vacío, desarrollarón\n"
+    "tecnologías ancestrales y\n"
+    "pulierón el uso de la magia.\n"
+    "\n"
+    "Ahora el caos ha regresado\n"
+    "para consumir su realidad y\n"
+    "usarán todo para pararlo,\n"
+    "aunque sea su final..\n\n"
+    "Unete a los Guardianes y ¡resiste!\n"
 )
+
 INFO_ANOMALIAS = (
     "ANOMALÍAS\n\n"
     "Entidades del caos.\n"
-    "Poderes que desafían\n"
-    "las leyes conocidas."
+    "Invasores de realidades.\n"
+    "\n"
+    "Desde el inicio de los tiempos\n"
+    "consimieron toda posibilidad\n"
+    "de vida en cualquier realidad\n"
+    "emergente.\n"
+    "\n"
+    "Ahora el Heraldo del caos ha\n"
+    "fijado sus esfuerzos en\n"
+    "consumir una realidad..\n\n"
+    "Unete al Vacío y ¡conquistala!\n"
 )
 
 
