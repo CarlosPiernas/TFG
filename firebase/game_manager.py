@@ -1,7 +1,7 @@
 """
 game_manager.py — Módulo de integración central.
 
-Responsable: M4 (Carlos)
+Responsable: M2 (Alex) + M1
 
 Este módulo es el PEGAMENTO entre los tres sistemas:
   - M1 (database/) → Persistencia SQLite
@@ -35,8 +35,7 @@ from database.repositories import (
 from database.repositories.mapa_repo import MapaRepo
 from database.repositories.equipamiento_repo import EquipamientoRepo
 
-# ── Imports de logic con importlib (evita conflicto firebase-admin en Windows) ─
-
+# ── Imports de logic con importlib (evita conflicto firebase-admin en Windows) ──
 Guerrero  = importlib.import_module("logic.Clases.Guerrero").Guerrero
 Mago      = importlib.import_module("logic.Clases.Mago").Mago
 Asesino   = importlib.import_module("logic.Clases.Asesino").Asesino
@@ -56,10 +55,10 @@ class GameManager:
     def __init__(self):
         initialize_db()
         run_seed()
-        self._mapa_repo    = MapaRepo()
-        self._equip_repo   = EquipamientoRepo()
-        self._enemy_loader = EnemyLoader()
-        self._encuentro    = Encuentro()
+        self._mapa_repo          = MapaRepo()
+        self._equip_repo         = EquipamientoRepo()
+        self._enemy_loader       = EnemyLoader()
+        self._encuentro          = Encuentro()
         self.nodo_seleccionado   = None
         self.faccion             = None
         self.personaje_activo_id = None
@@ -121,7 +120,6 @@ class GameManager:
                 self.personaje_activo_id = inv[0]['id']
 
         # Inicializar la vida del jugador a vida llena del personaje inicial.
-        # No tiene equipo aún, así que vida_max = pv_base.
         pv_inicial = personaje_b.get("pv_base", 0)
         recursos_repo.set_vida(pv_inicial, pv_inicial)
 
@@ -148,19 +146,15 @@ class GameManager:
         datos = personaje_repo.get_by_id(catalogo_id)
         if datos is None:
             return None
-        equipo        = self._equip_repo.get_equipo_de_personaje(self.personaje_activo_id)
-        datos["equipo"]  = equipo
-        datos["inv_id"]  = self.personaje_activo_id
+        equipo       = self._equip_repo.get_equipo_de_personaje(self.personaje_activo_id)
+        datos["equipo"] = equipo
+        datos["inv_id"] = self.personaje_activo_id
         return datos
 
     def cambiar_personaje_activo(self, inv_id: int):
         """
         Cambia el personaje activo SIN restaurar la vida del jugador.
-
-        La vida es un recurso del JUGADOR, no del personaje. Si el jugador
-        tiene 50 HP y cambia de personaje, sigue teniendo 50 HP. Solo las
-        pociones restauran vida. El único ajuste permitido es capear
-        vida_actual al nuevo vida_max si el personaje nuevo tiene menos PV.
+        La vida es un recurso del JUGADOR, no del personaje.
         """
         self.personaje_activo_id = inv_id
         recursos_repo.set_personaje_activo_id(inv_id)
@@ -169,7 +163,6 @@ class GameManager:
         if info is None:
             return
 
-        # Calcular vida_max del nuevo personaje (pv_base + bonuses de su equipo)
         pv_max    = info.get("pv_base", 0)
         equipo    = info.get("equipo", [])
         inv_items = {it["id"]: it for it in inventario_repo.get_inventario()}
@@ -186,12 +179,8 @@ class GameManager:
             if datos:
                 pv_max += datos.get("bonus_pv", 0)
 
-        # Conservar vida_actual tal como estaba en BD.
-        # Si el nuevo personaje tiene menos PV máximo, se capea hacia abajo.
-        # Nunca se restaura: la única forma de recuperar vida es con pociones.
         vida_db     = recursos_repo.get_vida()
         vida_actual = min(vida_db.get("vida_actual", pv_max), pv_max)
-
         recursos_repo.set_vida(vida_actual, pv_max)
 
     # ═══════════════════════════════════
@@ -274,7 +263,7 @@ class GameManager:
         nodos = self._mapa_repo.get_todos_nodos()
         resultado = []
         for nodo in nodos:
-            nodo_dict   = dict(nodo)
+            nodo_dict    = dict(nodo)
             enemigo_info = self._enemy_loader.get_info_nodo(nodo["nodo_id"])
             if enemigo_info:
                 nodo_dict["enemigo"] = enemigo_info
@@ -295,14 +284,58 @@ class GameManager:
     # COMBATE
     # ═══════════════════════════════════
 
+    def preparar_combate(self, nodo_id: int) -> dict | None:
+        """
+        Construye y devuelve los objetos jugador y enemigo listos para combate
+        sin ejecutarlo. Usado por PantallaCombate para el modo paso a paso.
+
+        Devuelve {'jugador': obj, 'enemigo': obj} o None si hay algún error.
+        """
+        nodo = self._mapa_repo.get_nodo(nodo_id)
+        if nodo is None or nodo["estado"] == "bloqueado":
+            return None
+
+        # Bloqueo por vida insuficiente
+        vida_db = recursos_repo.get_vida()
+        if vida_db["vida_max"] > 0 and vida_db["vida_actual"] <= 0:
+            return None
+
+        enemigo = self._enemy_loader.crear_enemigo(nodo_id)
+        if enemigo is None:
+            return None
+
+        jugador = self._crear_jugador_para_combate()
+        if jugador is None:
+            return None
+
+        return {"jugador": jugador, "enemigo": enemigo}
+
+    def aplicar_recompensas_nodo(self, nodo_id: int) -> dict:
+        """
+        Aplica y devuelve las recompensas del nodo. Llamado por PantallaCombate
+        tras confirmar victoria en modo paso a paso.
+        También persiste la vida del jugador tras el combate.
+        """
+        recompensas = self._dar_recompensas(nodo_id)
+        self._mapa_repo.completar_nodo(nodo_id, estrellas=1)
+        return recompensas
+
+    def persistir_vida_tras_combate(self, vida_actual: int, vida_max: int):
+        """
+        Persiste la vida del jugador al terminar un combate paso a paso.
+        Llamado por PantallaCombate cuando el Encuentro termina.
+        """
+        recursos_repo.set_vida(vida_actual, vida_max)
+
     def iniciar_combate(self, nodo_id: int) -> dict:
+        """Modo completo (sin UI paso a paso). Se mantiene para tests y M2."""
         nodo = self._mapa_repo.get_nodo(nodo_id)
         if nodo is None:
             return {"victoria": False, "log": ["Nodo no encontrado."], "recompensas": None}
         if nodo["estado"] == "bloqueado":
             return {"victoria": False, "log": ["Nodo bloqueado."], "recompensas": None}
 
-        # ── Bloqueo por vida insuficiente ──────────────────────────────
+        # Bloqueo por vida insuficiente
         vida_db = recursos_repo.get_vida()
         if vida_db["vida_max"] > 0 and vida_db["vida_actual"] <= 0:
             recursos = recursos_repo.get_recursos() or {}
@@ -328,7 +361,7 @@ class GameManager:
 
         log = self._encuentro.iniciar(jugador, enemigo)
 
-        # Protección BUG-03: si ambos siguen vivos, desempatar por PV
+        # Protección: si ambos siguen vivos, desempatar por PV
         if jugador.esta_vivo() and enemigo.esta_vivo():
             log.append("⏰ LÍMITE DE TURNOS alcanzado.")
             if jugador.vida >= enemigo.vida:
@@ -340,7 +373,6 @@ class GameManager:
         else:
             victoria = jugador.esta_vivo()
 
-        # Persistencia de vida tras combate
         recursos_repo.set_vida(jugador.vida, jugador.vida_max)
 
         recompensas = None
@@ -398,7 +430,7 @@ class GameManager:
                             jugador.vida_max += bv
                     break
 
-        # ── Sobrescribir vida con la persistida en BD ──────────────────
+        # Sobrescribir vida con la persistida en BD
         vida_db = recursos_repo.get_vida()
         if vida_db["vida_max"] > 0 and vida_db["vida_actual"] > 0:
             jugador.vida = min(vida_db["vida_actual"], jugador.vida_max)
@@ -469,13 +501,13 @@ class GameManager:
 
     def estado_completo(self) -> dict:
         return {
-            "faccion":         self.faccion,
+            "faccion":          self.faccion,
             "personaje_activo": self.get_personaje_activo_info(),
-            "recursos":        self.get_recursos(),
-            "personajes":      len(self.get_personajes_jugador()),
-            "armas":           len(self.get_armas_jugador()),
-            "mapa":            self.get_mapa(),
-            "firebase":        self._enemy_loader.estado(),
+            "recursos":         self.get_recursos(),
+            "personajes":       len(self.get_personajes_jugador()),
+            "armas":            len(self.get_armas_jugador()),
+            "mapa":             self.get_mapa(),
+            "firebase":         self._enemy_loader.estado(),
         }
 
     def _cargar_faccion(self) -> str | None:
