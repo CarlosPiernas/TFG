@@ -2,21 +2,24 @@ from kivy.uix.screenmanager import Screen, FadeTransition
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.widget import Widget
 from kivy.animation import Animation
 from kivy.clock import Clock
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.metrics import dp
 from widgets.responsive import sw, sh, sf, sdp
+from config import FONDO_SPLASH, COLOR_ANOMALIAS, COLOR_GUARDIANES
+import random
 
 
 class PantallaSplash(Screen):
     def __init__(self, gm=None, **kwargs):
         super().__init__(**kwargs)
         self.gm = gm
-        self._auto_event = None
+        self._tick_event = None
+        self._progreso = 0.0
         self._touch_ready = False
 
-        # Fondo negro puro
         with self.canvas.before:
             Color(0, 0, 0, 1)
             self._bg = Rectangle(pos=self.pos, size=self.size)
@@ -24,90 +27,119 @@ class PantallaSplash(Screen):
 
         self.layout = FloatLayout()
 
-        # Logo del juego centrado en la parte superior
-        self.logo = Image(
-            source='assets/logos/Logo_Juego.png',
+        # 1. Fondo primero (capa más baja)
+        self.fondo = Image(
+            source=FONDO_SPLASH,
             allow_stretch=True,
-            keep_ratio=True,
-            size_hint=(0.7, 0.35),
-            pos_hint={'center_x': 0.5, 'top': 0.88},
-            opacity=0
+            keep_ratio=False,
+            size_hint=(1, 1),
+            pos_hint={'x': 0, 'y': 0}
         )
 
-        # Subtítulo
-        self.subtitulo = Label(
-            text='ANOMALÍAS vs GUARDIANES\nDEL ESPACIO TIEMPO',
-            font_size=sf(14),
-            bold=True,
-            color=(0.85, 0.75, 1, 1),
-            halign='center',
-            valign='middle',
-            size_hint=(1, None),
-            height=sh(50),
-            pos_hint={'center_x': 0.5, 'center_y': 0.47},
-            opacity=0
+        # 2. Barra bg
+        self.barra_bg = Widget(
+            size_hint=(0.75, None),
+            height=dp(10),
+            pos_hint={'center_x': 0.5, 'y': 0.06}
         )
-        self.subtitulo.bind(size=self.subtitulo.setter('text_size'))
+        with self.barra_bg.canvas:
+            Color(0.15, 0.15, 0.15, 0.8)
+            self._barra_bg_rect = RoundedRectangle(
+                pos=self.barra_bg.pos,
+                size=self.barra_bg.size,
+                radius=[dp(5)]
+            )
+        self.barra_bg.bind(
+            pos=lambda *a: setattr(self._barra_bg_rect, 'pos', self.barra_bg.pos),
+            size=lambda *a: setattr(self._barra_bg_rect, 'size', self.barra_bg.size)
+        )
 
-        # Label de toque
+        # 3. Barra fill
+        self._color_barra = random.choice([COLOR_ANOMALIAS, COLOR_GUARDIANES])
+        self.barra_fill = Widget(
+            size_hint=(None, None),
+            height=dp(10),
+            width=0,
+        )
+        with self.barra_fill.canvas:
+            self._color_inst = Color(*self._color_barra)
+            self._barra_rect = RoundedRectangle(
+                pos=self.barra_fill.pos,
+                size=self.barra_fill.size,
+                radius=[dp(5)]
+            )
+        self.barra_fill.bind(
+            pos=lambda *a: setattr(self._barra_rect, 'pos', self.barra_fill.pos),
+            size=lambda *a: setattr(self._barra_rect, 'size', self.barra_fill.size)
+        )
+
+        # 4. Tap label (capa más alta)
         self.tap_label = Label(
             text='TOCA PARA CONTINUAR',
             font_size=sf(11),
             color=(1, 1, 1, 0.6),
             size_hint=(1, None),
             height=sh(20),
-            pos_hint={'center_x': 0.5, 'center_y': 0.1},
+            pos_hint={'center_x': 0.5, 'y': 0.02},
             opacity=0
         )
 
-        self.layout.add_widget(self.logo)
-        self.layout.add_widget(self.subtitulo)
+        self.layout.add_widget(self.fondo)
+        self.layout.add_widget(self.barra_bg)
+        self.layout.add_widget(self.barra_fill)
         self.layout.add_widget(self.tap_label)
         self.add_widget(self.layout)
 
     def _upd_bg(self, *args):
-        self._bg.pos = self.pos
+        self._bg.pos  = self.pos
         self._bg.size = self.size
 
-    # ── Ciclo de vida ─────────────────────────────────────────────────────────
-
     def on_enter(self, *args):
+        self._progreso = 0.0
         self._touch_ready = False
-        Clock.schedule_once(self._animar_entrada, 0.3)
+        self._color_barra = random.choice([COLOR_ANOMALIAS, COLOR_GUARDIANES])
+        self._color_inst.rgba = self._color_barra
+        self._actualizar_barra()
+        self._tick_event = Clock.schedule_once(self._tick, random.uniform(0.3, 0.6))
 
     def on_leave(self, *args):
-        if self._auto_event:
-            self._auto_event.cancel()
-            self._auto_event = None
+        if self._tick_event:
+            self._tick_event.cancel()
+            self._tick_event = None
         Animation.cancel_all(self.tap_label)
+        self._touch_ready = False
+        self.tap_label.opacity = 0
 
-    # ── Animaciones ───────────────────────────────────────────────────────────
+    def _tick(self, dt):
+        incremento = random.uniform(0.08, 0.22)
+        self._progreso = min(self._progreso + incremento, 1.0)
+        self._actualizar_barra()
 
-    def _animar_entrada(self, dt):
-        # Logo aparece primero
-        Animation(opacity=1, duration=1.0, t='in_out_quad').start(self.logo)
-        # Subtítulo medio segundo después
-        Clock.schedule_once(self._mostrar_subtitulo, 0.5)
+        if self._progreso >= 1.0:
+            Clock.schedule_once(self._mostrar_tap, 0.3)
+        else:
+            self._tick_event = Clock.schedule_once(self._tick, random.uniform(0.25, 0.55))
 
-    def _mostrar_subtitulo(self, dt):
-        Animation(opacity=1, duration=0.8, t='in_out_quad').start(self.subtitulo)
-        Clock.schedule_once(self._mostrar_tap, 0.8)
+    def _actualizar_barra(self):
+        def _upd(dt):
+            bg_x = self.barra_bg.x
+            bg_w = self.barra_bg.width
+            fill_w = bg_w * self._progreso
+            self.barra_fill.x      = bg_x
+            self.barra_fill.width  = max(fill_w, dp(5))
+            self.barra_fill.y      = self.barra_bg.y
+            self.barra_fill.height = self.barra_bg.height
+        Clock.schedule_once(_upd, 0)
 
     def _mostrar_tap(self, dt):
+        self._touch_ready = True
         self.tap_label.opacity = 1
-        # Parpadeo en bucle
         blink = (
             Animation(opacity=0.15, duration=0.7, t='in_out_sine') +
             Animation(opacity=0.65, duration=0.7, t='in_out_sine')
         )
         blink.repeat = True
         blink.start(self.tap_label)
-
-        self._touch_ready = True
-        # Auto-avance a los 5 segundos
-        self._auto_event = Clock.schedule_once(self._navegar, 5.0)
-
-    # ── Navegación ────────────────────────────────────────────────────────────
 
     def on_touch_down(self, touch):
         if not self._touch_ready:
@@ -116,19 +148,6 @@ class PantallaSplash(Screen):
         return True
 
     def _navegar(self, dt=None):
-        if self._auto_event:
-            self._auto_event.cancel()
-            self._auto_event = None
-
-        # Si ya hay facción registrada → home directamente
-        # Si no → pantalla de selección de facción
         destino = 'principal' if (self.gm and self.gm.faccion) else 'seleccion'
-
-        # Fade out del layout y luego cambia de pantalla
-        anim = Animation(opacity=0, duration=0.4, t='in_out_quad')
-        anim.bind(on_complete=lambda *_: self._cambiar(destino))
-        anim.start(self.layout)
-
-    def _cambiar(self, destino):
-        self.manager.transition = FadeTransition(duration=0.3)
+        self.manager.transition = FadeTransition(duration=0.4)
         self.manager.current = destino
