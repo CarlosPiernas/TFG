@@ -102,6 +102,7 @@ FONDO_SELECCION  = 'assets/fondos/Fondo_Seleccion.png'
 FONDO_ANOMALIAS  = 'assets/fondos/Fondo_Anomalias.png'
 FONDO_GUARDIANES = 'assets/fondos/Fondo_Guardianes.png'
 FONDO_GACHA = 'assets/fondos/Fondo_Gacha_Anomalia.png'
+FONDO_SPLASH = 'assets/fondos/Fondo_Splash.png'
 # Nombres de facción
 NOMBRE_ANOMALIA = 'ANOMALÍAS'
 NOMBRE_GUARDIAN = 'GUARDIANES'
