@@ -43,15 +43,15 @@ SLOT_ARMA_VACIO = 'assets/logos/SlotArmaVacio.png'
 PLACEHOLDER = 'assets/test.png'
 
 # Logos
-LOGO_ANOMALIA = 'assets/logos/Logo_Anomalias.png'
+LOGO_ANOMALIA = 'assets/logos/Logo_Anomalia.png'
 LOGO_GUARDIAN = 'assets/logos/Logo_Guardianes.png'
 
 # Marco decorativo de la barra de vida (común para ambas facciones)
 MARCO_VIDA    = 'assets/logos/MarcoVida.png'
 
 # ── Forja: fondos por facción y slots de runas ──────────────────────────────
-FONDO_FORJA_GUARDIAN = 'assets/fondos/Forja_Guar_Pulida.jpg'
-FONDO_FORJA_ANOMALIA = 'assets/fondos/ForjaVacioPulida.jpg'
+FONDO_FORJA_GUARDIAN = 'assets/fondos/Forja_Guardianes.png'
+FONDO_FORJA_ANOMALIA = 'assets/fondos/Forja_Anomalias.png'
 
 SLOT_RUNA_GUARDIAN   = 'assets/logos/SlotRunaGuardian-sinFondo.png'
 SLOT_RUNA_ANOMALIA   = 'assets/logos/SoltRunaVacio-sinFondo.png'
