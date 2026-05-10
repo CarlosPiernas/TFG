@@ -5,3 +5,4 @@ __pycache__/
 firebase/clave-firebase.json
 data/game.db
 .kiro
+.hypothesis
