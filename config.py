@@ -1,4 +1,5 @@
 GACHA_MODE = "simple"
+
 # Convierte un color hexadecimal (#RRGGBB) a tupla RGBA que entiende Kivy
 def hex_to_kivy(hex_color):
     h = hex_color.lstrip('#')
@@ -19,28 +20,34 @@ COLOR_VIDA_MEDIA = hex_to_kivy('#ff9900')
 COLOR_VIDA_BAJA  = hex_to_kivy('#cc2222')
 COLOR_STATS      = hex_to_kivy('#ffffff')
 
-#Fondos Combate Nodo
+# Fondos Combate Nodo
 FONDO_NODO_1_4 = 'assets/fondos/FondosNodos/Nodo1-4Guardianes.JPg'
+
+# ── Pantalla de combate ───────────────────────────────────────────────────────
+BOTON_PELEAR_COMBATE    = 'assets/Botones/BotonPelea.png'
+BOTON_VOLVER_COMBATE    = 'assets/Botones/Boton.png'
+BORDE_LOG_COMBATE       = 'assets/Botones/BordePanelCombate.png'
+CUADRO_ESPECIAL_COMBATE = 'assets/Botones/CuadroEspecial.png'
 
 # Moneda e iconos de navegación
 ICONO_MONEDA     = 'assets/logos/Moneda.png'
 ICONO_GACHA      = 'assets/logos/IconoGacha.png'
 ICONO_INVENTARIO = 'assets/logos/IconoInventario.png'
-ICONO_ATK      = 'assets/logos/Ataque.png'
-ICONO_DEF      = 'assets/logos/Defensa.png'
-ICONO_DES      = 'assets/logos/Destreza.png'
-ICONO_MAG      = 'assets/logos/Magia.png'
-ICONO_POCION   = 'assets/logos/potions.png'
+ICONO_ATK        = 'assets/logos/Ataque.png'
+ICONO_DEF        = 'assets/logos/Defensa.png'
+ICONO_DES        = 'assets/logos/Destreza.png'
+ICONO_MAG        = 'assets/logos/Magia.png'
+ICONO_POCION     = 'assets/logos/potions.png'
 PAPIRO_ANOMALIA  = 'assets/fondos/papiroAnomalo.png'
 PAPIRO_GUARDIAN  = 'assets/fondos/papiroGuardian.png'
 ICONO_CAMPAÑA    = 'assets/logos/IconoCampaña.png'
 FONDO_HOME       = 'assets/fondos/FondoPantallaHome.jpg'
 
 # Fondos bloque runas
-FONDO_RUNA_ANOMALIA  = 'assets/fondos/fondoRunaAnoma.jpg'
-FONDO_RUNA_GUARDIAN  = 'assets/fondos/fondoRunaGuard.jpg'
-SLOT_RUNA_VACIO = 'assets/logos/SlotRunaVacio.png'
-SLOT_ARMA_VACIO = 'assets/logos/SlotArmaVacio.png'
+FONDO_RUNA_ANOMALIA = 'assets/fondos/fondoRunaAnoma.jpg'
+FONDO_RUNA_GUARDIAN = 'assets/fondos/fondoRunaGuard.jpg'
+SLOT_RUNA_VACIO     = 'assets/logos/SlotRunaVacio.png'
+SLOT_ARMA_VACIO     = 'assets/logos/SlotArmaVacio.png'
 
 # Placeholder para assets que faltan
 PLACEHOLDER = 'assets/test.png'
@@ -49,18 +56,15 @@ PLACEHOLDER = 'assets/test.png'
 LOGO_ANOMALIA = 'assets/logos/Logo_Anomalia.png'
 LOGO_GUARDIAN = 'assets/logos/Logo_Guardianes.png'
 
-# Marco decorativo de la barra de vida (común para ambas facciones)
-MARCO_VIDA    = 'assets/logos/MarcoVida.png'
+# Marco decorativo de la barra de vida
+MARCO_VIDA = 'assets/logos/MarcoVida.png'
 
-# ── Forja: fondos por facción y slots de runas ──────────────────────────────
-FONDO_FORJA_GUARDIAN = 'assets/fondos/Forja_Guardianes.png'
-FONDO_FORJA_ANOMALIA = 'assets/fondos/Forja_Anomalias.png'
-
-SLOT_RUNA_GUARDIAN   = 'assets/logos/SlotRunaGuardian-sinFondo.png'
-SLOT_RUNA_ANOMALIA   = 'assets/logos/SoltRunaVacio-sinFondo.png'
-SLOT_RUNA_RESULTADO  = 'assets/logos/SlotResultadoRuna.png'
-
-# Forja: iconos de botones y cargas
+# ── Forja ────────────────────────────────────────────────────────────────────
+FONDO_FORJA_GUARDIAN       = 'assets/fondos/Forja_Guardianes.png'
+FONDO_FORJA_ANOMALIA       = 'assets/fondos/Forja_Anomalias.png'
+SLOT_RUNA_GUARDIAN         = 'assets/logos/SlotRunaGuardian-sinFondo.png'
+SLOT_RUNA_ANOMALIA         = 'assets/logos/SoltRunaVacio-sinFondo.png'
+SLOT_RUNA_RESULTADO        = 'assets/logos/SlotResultadoRuna.png'
 ICONO_FORJAR               = 'assets/logos/IconoForjar.png'
 MARCO_BOTON                = 'assets/logos/Boton.png'
 BOTON_TRANSMUTAR           = 'assets/logos/BotonTransmutar.png'
@@ -69,20 +73,20 @@ FLECHA_TRANSMUTAR_GUARDIAN = 'assets/logos/FlechaTransmutar.png'
 FLECHA_TRANSMUTAR_ANOMALIA = 'assets/logos/FlechaTransmutarAnomalia.png'
 CABECERA_FORJA             = 'assets/fondos/CabeceraForja.jpg'
 
-# Inventario: cabecera y botones de pestañas
-CABECERA_INVENTARIO       = 'assets/fondos/CabeceraInventario.jpg'
-BOTON_PERSONAJES          = 'assets/logos/BotonPersonajes.png'
-BOTON_ARMAS               = 'assets/logos/BotonArmas.png'
-BOTON_RUNAS               = 'assets/logos/BotonRunas.png'
-BOTON_OBJETOS             = 'assets/logos/BotonObjetos.png'
+# Inventario
+CABECERA_INVENTARIO = 'assets/fondos/CabeceraInventario.jpg'
+BOTON_PERSONAJES    = 'assets/logos/BotonPersonajes.png'
+BOTON_ARMAS         = 'assets/logos/BotonArmas.png'
+BOTON_RUNAS         = 'assets/logos/BotonRunas.png'
+BOTON_OBJETOS       = 'assets/logos/BotonObjetos.png'
 
 # Tienda
-FONDO_TIENDA       = 'assets/fondos/Fondo_Tienda.png'
-TITULO_TIENDA      = 'assets/fondos/Titulo_Tienda.png'
-BOTON_COMPRAR      = 'assets/fondos/Boton_Comprar.png'
-FRAGMENTO_ROJO     = 'assets/fondos/Fragmento_Rojo.png'
-FRAGMENTO_AZUL     = 'assets/fondos/Fragmento_Azul.png'
-LOGO_POCION        = 'assets/fondos/Logo_Pocion.png'
+FONDO_TIENDA   = 'assets/fondos/Fondo_Tienda.png'
+TITULO_TIENDA  = 'assets/fondos/Titulo_Tienda.png'
+BOTON_COMPRAR  = 'assets/fondos/Boton_Comprar.png'
+FRAGMENTO_ROJO = 'assets/fondos/Fragmento_Rojo.png'
+FRAGMENTO_AZUL = 'assets/fondos/Fragmento_Azul.png'
+LOGO_POCION    = 'assets/fondos/Logo_Pocion.png'
 
 # Sprites personajes
 SPRITE_ANOMALIA = 'assets/personajes/PersonajesS/Jugable/NEXPAS/NEXPASsplash.png'
@@ -102,21 +106,30 @@ BOTON_VOLVER           = 'assets/logos/Boton.png'
 TICKET_PERSONAJES      = 'assets/fondos/Ticket_Personajes.png'
 TICKET_ARMAS           = 'assets/fondos/Ticket_Armas.png'
 
-# Fondos
+# Fondos generales
 FONDO_SELECCION  = 'assets/fondos/Fondo_Seleccion.png'
 FONDO_ANOMALIAS  = 'assets/fondos/Fondo_Anomalias.png'
 FONDO_GUARDIANES = 'assets/fondos/Fondo_Guardianes.png'
-FONDO_GACHA = 'assets/fondos/Fondo_Gacha_Anomalia.png'
-FONDO_SPLASH = 'assets/fondos/Fondo_Splash.png'
 FONDO_GACHA      = 'assets/fondos/Fondo_Gacha_Anomalia.png'
+FONDO_SPLASH     = 'assets/fondos/Fondo_Splash.png'
 
 # Nombres de facción
 NOMBRE_ANOMALIA = 'ANOMALÍAS'
 NOMBRE_GUARDIAN = 'GUARDIANES'
 
+# Mapa
+FONDO_MAPA1_ANOMALIAS  = 'assets/fondos/Fondo_mapa1_Anomalias.png'
+FONDO_MAPA2_ANOMALIAS  = 'assets/fondos/Fondo_mapa2_Anomalias.png'
+FONDO_MAPA1_GUARDIANES = 'assets/fondos/Fondo_mapa1_Guardianes.png'
+FONDO_MAPA2_GUARDIANES = 'assets/fondos/Fondo_mapa2_Guardianes.png'
+PORTAL_ANOMALIAS       = 'assets/logos/Portal_anomalias.png'
+PORTAL_GUARDIANES      = 'assets/logos/Portal_guardianes.png'
+FLECHA_ARRIBA          = 'assets/logos/flecha_arriba.png'
+FLECHA_ABAJO           = 'assets/logos/flecha_abajo.png'
+
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ── ICONOS DE ARMAS ───────────────────────────────────────────────────────────
+# ── ICONOS DE ARMAS
 # ══════════════════════════════════════════════════════════════════════════════
 
 ICONO_ARMA_DAGA_B     = 'assets/logos/IconoDagaB.png'
@@ -135,8 +148,6 @@ ARMA_ICONOS = {
     'Magia Interior':     ICONO_ARMA_BASTON_S,
 }
 
-# Nombre bonito que ve el jugador (clave = nombre interno en BD).
-# "Tirada del Destino" se renombra a "Apuesta Amañada" en la UI.
 ARMA_NOMBRES_DISPLAY = {
     'Daga':               'Daga',
     'Mandoble':           'Mandoble',
@@ -146,7 +157,6 @@ ARMA_NOMBRES_DISPLAY = {
     'Magia Interior':     'Magia Interior',
 }
 
-# Lore / descripción de cada arma mostrada en el inventario.
 ARMA_LORE = {
     'Daga': (
         'Pareja de cuchillos desgastados por el uso. '
@@ -183,19 +193,10 @@ def nombre_arma(nombre_db: str) -> str:
 
 def lore_arma(nombre_db: str) -> str:
     return ARMA_LORE.get(nombre_db, '')
-# Mapa
-FONDO_MAPA1_ANOMALIAS  = 'assets/fondos/Fondo_mapa1_Anomalias.png'
-FONDO_MAPA2_ANOMALIAS  = 'assets/fondos/Fondo_mapa2_Anomalias.png'
-FONDO_MAPA1_GUARDIANES = 'assets/fondos/Fondo_mapa1_Guardianes.png'
-FONDO_MAPA2_GUARDIANES = 'assets/fondos/Fondo_mapa2_Guardianes.png'
-PORTAL_ANOMALIAS       = 'assets/logos/Portal_anomalias.png'
-PORTAL_GUARDIANES      = 'assets/logos/Portal_guardianes.png'
-FLECHA_ARRIBA          = 'assets/logos/flecha_arriba.png'
-FLECHA_ABAJO           = 'assets/logos/flecha_abajo.png'
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ── ICONOS Y TEXTOS DE PERSONAJES ─────────────────────────────────────────────
+# ── ICONOS Y TEXTOS DE PERSONAJES
 # ══════════════════════════════════════════════════════════════════════════════
 
 ICONO_ANOMALIA_GUERRERO_B = 'assets/logos/IconoGuerreroBAnomalia.png'
@@ -227,7 +228,6 @@ PERSONAJE_ICONOS = {
     'Guardian_Mago_S':     ICONO_GUARDIAN_MAGO_S,
 }
 
-# Nombres bonitos que ve el jugador en inventario y en el popup de gacha.
 PERSONAJE_NOMBRES_DISPLAY = {
     'Anomalia_Guerrero_B': 'Cascarón Errante',
     'Anomalia_Asesino_B':  'Acechador de Fisuras',
@@ -243,7 +243,6 @@ PERSONAJE_NOMBRES_DISPLAY = {
     'Guardian_Mago_S':     'Nara, la Última Arma',
 }
 
-# Lore / historia de cada personaje mostrada en el inventario.
 PERSONAJE_LORE = {
     'Anomalia_Guerrero_B': (
         'Lo que antes fue un soldado con nombre y patria, ahora es un recipiente hueco. '
@@ -333,7 +332,7 @@ def lore_personaje(nombre_db: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# ── ICONOS Y TEXTOS DE RUNAS ──────────────────────────────────────────────────
+# ── ICONOS Y TEXTOS DE RUNAS
 # ══════════════════════════════════════════════════════════════════════════════
 
 ICONO_RUNA_ATAQUE   = 'assets/logos/runas/Ataque.png'
@@ -360,7 +359,6 @@ RUNA_ICONOS = {
     'RUNA_ROTA':     ICONO_RUNA_ROTA,
 }
 
-# Nombres bonitos de runas.
 RUNA_NOMBRES_DISPLAY = {
     'RUNA_ATAQUE':   'Runa de Ataque',
     'RUNA_MAGIA':    'Runa de Magia',
@@ -374,7 +372,6 @@ RUNA_NOMBRES_DISPLAY = {
     'RUNA_ROTA':     'Runa Rota',
 }
 
-# Lore / descripción de cada runa.
 RUNA_LORE = {
     'RUNA_ATAQUE': (
         'Símbolo grabado en piedra de guerra. '
@@ -432,3 +429,65 @@ def nombre_runa(nombre_db: str) -> str:
 
 def lore_runa(nombre_db: str) -> str:
     return RUNA_LORE.get(nombre_db, '')
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ── SPRITES DE COMBATE
+# ══════════════════════════════════════════════════════════════════════════════
+
+RUTA_CHARACTERS        = 'assets/characters'
+RUTA_FONDOS_NODOS      = 'assets/fondos/FondosNodos'
+DURACION_SPRITE_ACCION = 1   # segundos que dura el sprite atacando/bloqueando/especial
+
+# ── Estados base (todos los personajes) ──────────────────────────────────────
+ESTADO_IDLE       = 'idle'
+ESTADO_ATACANDO   = 'atacando'
+ESTADO_BLOQUEANDO = 'bloqueando'
+ESTADO_DERROTA    = 'derrota'
+
+# ── Estados especiales S ──────────────────────────────────────────────────────
+# Mago S (Guardian y Anomalia): pasiva de contraataque al primer golpe recibido
+ESTADO_COUNTER    = 'counter'    # guardian_mago_s_counter.png / anomalia_mago_s_counter.png
+
+# Asesino S (Guardian): lanzamiento de dado de suerte (resultado >= 40)
+ESTADO_DADO       = 'dado'       # guardian_asesino_s_dado.png
+
+# Guerrero S (Anomalia): modo berserker — sprites alternativos cuando queda 1 contador
+# Nota: el archivo atacandoB tiene un espacio antes del .png → renómbralo a atacandoB.png
+ESTADO_IDLE_B       = 'idleB'        # anomalia_guerrero_s_idleB.png
+ESTADO_ATACANDO_B   = 'atacandoB'    # anomalia_guerrero_s_atacandoB.png  ⚠️ renombrar
+ESTADO_BLOQUEANDO_B = 'bloqueandoB'  # anomalia_guerrero_s_bloqueandoB.png
+
+# ── Qué personajes tienen cada sprite especial (nombre BD en minúsculas) ──────
+PERSONAJES_CON_COUNTER     = {'guardian_mago_s', 'anomalia_mago_s'}
+PERSONAJES_CON_DADO        = {'guardian_asesino_s'}
+PERSONAJES_CON_BERSERKER_B = {'anomalia_guerrero_s'}
+
+
+# ── Helpers de rutas ──────────────────────────────────────────────────────────
+
+def obtenerRutaJugador(nombre: str, estado: str) -> str:
+    """Ruta al sprite del jugador: assets/characters/{nombre_lower}/{nombre_lower}_{estado}.png"""
+    n = nombre.lower()
+    return f'{RUTA_CHARACTERS}/{n}/{n}_{estado}.png'
+
+
+def obtenerRutaEnemigo(nombre: str, estado: str) -> str:
+    """Placeholder temporal hasta tener sprites propios de enemigos."""
+    if estado == ESTADO_DERROTA:
+        return f'{RUTA_CHARACTERS}/anomalia_guerrero_s/anomalia_guerrero_s_derrota.png'
+    return f'{RUTA_CHARACTERS}/anomalia_guerrero_s/anomalia_guerrero_s_idle.png'
+
+
+def obtenerFondoNodo(nodo_id: int, faccion: str) -> str:
+    """Ruta al fondo del nodo según id y facción del jugador."""
+    fac = 'Guardianes' if 'guardian' in (faccion or '').lower() else 'Anomalias'
+    if nodo_id <= 4:
+        archivo = f'Nodo1-4{fac}.jpg'
+    elif nodo_id == 5:
+        archivo = f'Nodo5{fac}.jpg'
+    elif nodo_id <= 9:
+        archivo = f'Nodo6-9{fac}.jpg'
+    else:
+        archivo = f'Nodo10{fac}.jpg'
+    return f'{RUTA_FONDOS_NODOS}/{archivo}'

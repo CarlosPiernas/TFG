@@ -38,6 +38,11 @@ class DatosJugador:
         self.nodos_vencidos = set()
         self.nodo_actual = 0
 
+        # ── Repeticiones por nodo: nodo_id → veces repetido ──
+        # La primera vez que se completa un nodo NO cuenta como repetición.
+        # A partir de la segunda visita se empieza a contar.
+        self.repeticiones_nodos = {}
+
     # ═══════════════════════════════════
     # MONEDAS
     # ═══════════════════════════════════
@@ -194,6 +199,60 @@ class DatosJugador:
         self.fragmentos_arma -= FRAGMENTOS_PARA_ELEGIR
         self.armas_desbloqueadas.add(nombre)
         return nombre
+
+    # ═══════════════════════════════════
+    # PROGRESO
+    # ═══════════════════════════════════
+
+    def registrar_nodo_vencido(self, nodo):
+        self.nodos_vencidos.add(nodo)
+        if nodo > self.nodo_actual:
+            self.nodo_actual = nodo
+
+    # ═══════════════════════════════════
+    # REPETICIONES POR NODO
+    # ═══════════════════════════════════
+
+    def registrar_repeticion_nodo(self, nodo_id):
+        """
+        Llama a este método SOLO cuando el jugador repite un nodo ya vencido.
+        NO llamar en la primera victoria del nodo.
+        Devuelve el numero de veces que ha repetido ese nodo (1, 2, 3...).
+        """
+        nodo_id = str(nodo_id)
+        self.repeticiones_nodos[nodo_id] = self.repeticiones_nodos.get(nodo_id, 0) + 1
+        return self.repeticiones_nodos[nodo_id]
+
+    def get_repeticiones_nodo(self, nodo_id):
+        """
+        Devuelve cuantas veces ha repetido el jugador ese nodo.
+        0 significa que lo ha completado una sola vez o que nunca lo ha jugado.
+        """
+        return self.repeticiones_nodos.get(str(nodo_id), 0)
+
+    def probabilidad_ataque_sorpresa(self, nodo_id):
+        """
+        Devuelve la probabilidad (0.0 a 0.3) del ataque sorpresa del enemigo
+        en funcion de cuantas veces se ha repetido el nodo.
+          0 repeticiones (primera vez o nodo nuevo) → 0%
+          1 repeticion                               → 10%
+          2 repeticiones                             → 20%
+          3 o mas repeticiones                       → 30%
+        """
+        rep = self.get_repeticiones_nodo(nodo_id)
+        if rep == 0:
+            return 0.0
+        elif rep == 1:
+            return 0.10
+        elif rep == 2:
+            return 0.20
+        else:
+            return 0.30
+
+    # ═══════════════════════════════════
+    # BD
+    # ═══════════════════════════════════
+
     def cargar_desde_bd(self):
         """Carga el estado del jugador desde SQLite."""
         import sys, os
@@ -204,13 +263,13 @@ class DatosJugador:
         # Recursos
         r = recursos_repo.get_recursos()
         if r:
-            self.monedas             = r.get('monedas', 0)
-            self.pociones            = r.get('pociones', 0)
-            self.transmutadores      = r.get('transmutadores', 0)
-            self.tickets_personaje   = r.get('tickets_personaje', 0)
-            self.tickets_arma        = r.get('tickets_arma', 0)
+            self.monedas              = r.get('monedas', 0)
+            self.pociones             = r.get('pociones', 0)
+            self.transmutadores       = r.get('transmutadores', 0)
+            self.tickets_personaje    = r.get('tickets_personaje', 0)
+            self.tickets_arma         = r.get('tickets_arma', 0)
             self.fragmentos_personaje = r.get('fragmentos_rojos', 0)
-            self.fragmentos_arma     = r.get('fragmentos_azules', 0)
+            self.fragmentos_arma      = r.get('fragmentos_azules', 0)
 
         # Personajes desbloqueados
         for item in inventario_repo.get_inventario_by_tipo('personaje'):
@@ -241,45 +300,36 @@ class DatosJugador:
 
         return self
 
+    def guardar_en_bd(self):
+        """Persiste el estado del jugador en SQLite."""
+        import sys, os
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+        from database.db_manager import get_connection
 
-def guardar_en_bd(self):
-    """Persiste el estado del jugador en SQLite."""
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-    from database.db_manager import get_connection
-
-    conn = get_connection()
-    try:
-        conn.execute("""
-            UPDATE recursos_jugador SET
-                monedas            = ?,
-                pociones           = ?,
-                transmutadores     = ?,
-                tickets_personaje  = ?,
-                tickets_arma       = ?,
-                fragmentos_rojos   = ?,
-                fragmentos_azules  = ?
-            WHERE id = 1
-        """, (
-            self.monedas,
-            self.pociones,
-            self.transmutadores,
-            self.tickets_personaje,
-            self.tickets_arma,
-            self.fragmentos_personaje,
-            self.fragmentos_arma,
-        ))
-        conn.commit()
-    finally:
-        conn.close()
-    # ═══════════════════════════════════
-    # PROGRESO
-    # ═══════════════════════════════════
-
-    def registrar_nodo_vencido(self, nodo):
-        self.nodos_vencidos.add(nodo)
-        if nodo > self.nodo_actual:
-            self.nodo_actual = nodo
+        conn = get_connection()
+        try:
+            conn.execute("""
+                UPDATE recursos_jugador SET
+                    monedas            = ?,
+                    pociones           = ?,
+                    transmutadores     = ?,
+                    tickets_personaje  = ?,
+                    tickets_arma       = ?,
+                    fragmentos_rojos   = ?,
+                    fragmentos_azules  = ?
+                WHERE id = 1
+            """, (
+                self.monedas,
+                self.pociones,
+                self.transmutadores,
+                self.tickets_personaje,
+                self.tickets_arma,
+                self.fragmentos_personaje,
+                self.fragmentos_arma,
+            ))
+            conn.commit()
+        finally:
+            conn.close()
 
     # ═══════════════════════════════════
     # RESUMEN (para debug)
@@ -287,7 +337,7 @@ def guardar_en_bd(self):
 
     def __str__(self):
         runas_str = ", ".join(f"{k}×{v}" for k, v in sorted(self.runas.items())) or "ninguna"
-        pers_str = ", ".join(sorted(self.personajes_desbloqueados)) or "ninguno"
+        pers_str  = ", ".join(sorted(self.personajes_desbloqueados)) or "ninguno"
         armas_str = ", ".join(sorted(self.armas_desbloqueadas)) or "ninguna"
 
         return (
