@@ -220,13 +220,13 @@ class PantallaCombate(Screen):
         self.gm              = gm
         self.nombreJugador   = ''
         self.nombreEnemigo   = ''
-        self.spriteEnemigo   = ''   # nombre del sprite del enemigo (ej. 'anomalia_guerrero_b')
+        self.spriteEnemigo   = ''
         self.vidaMaxJugador  = 1
         self.vidaMaxEnemigo  = 1
         self._encuentro      = None
         self._en_combate     = False
         self._timer_sprite   = None
-        self._timer_sprite_e = None   # timer para animacion del enemigo
+        self._timer_sprite_e = None
         self._counter_usado  = False
 
         with self.canvas.before:
@@ -236,9 +236,12 @@ class PantallaCombate(Screen):
 
         raiz = BoxLayout(orientation='vertical', padding=dp(8), spacing=dp(5))
 
+        # ── Fila de vida ─────────────────────────────────────────────────────
         filaVida = BoxLayout(orientation='horizontal', size_hint=(1, None), height=sh(88), spacing=dp(6))
+
         colJ = BoxLayout(orientation='vertical', size_hint=(0.42, 1), spacing=dp(2))
-        self.lblNombreJ = Label(text='', font_size=sf(19), color=COLOR_GUARDIANES, bold=True,
+        # FIX nº2: font_size reducido de sf(19) a sf(13)
+        self.lblNombreJ = Label(text='', font_size=sf(13), color=COLOR_GUARDIANES, bold=True,
                                 size_hint=(1, None), height=sh(30), halign='left', valign='middle')
         self.lblNombreJ.bind(size=self.lblNombreJ.setter('text_size'))
         self.barraJ = _BarraVida(color=COLOR_GUARDIANES, size_hint=(1, None), height=sh(32))
@@ -250,7 +253,8 @@ class PantallaCombate(Screen):
         lblVS.bind(size=lblVS.setter('text_size'))
 
         colE = BoxLayout(orientation='vertical', size_hint=(0.42, 1), spacing=dp(2))
-        self.lblNombreE = Label(text='', font_size=sf(19), color=COLOR_ANOMALIAS, bold=True,
+        # FIX nº2: font_size reducido de sf(19) a sf(13)
+        self.lblNombreE = Label(text='', font_size=sf(13), color=COLOR_ANOMALIAS, bold=True,
                                 size_hint=(1, None), height=sh(30), halign='right', valign='middle')
         self.lblNombreE.bind(size=self.lblNombreE.setter('text_size'))
         self.barraE = _BarraVida(color=COLOR_ANOMALIAS, size_hint=(1, None), height=sh(32))
@@ -261,6 +265,7 @@ class PantallaCombate(Screen):
         filaVida.add_widget(lblVS)
         filaVida.add_widget(colE)
 
+        # ── Zona sprites ─────────────────────────────────────────────────────
         self.zonaSprites = FloatLayout(size_hint=(1, 0.43))
         self.imgFondo = Image(source='', allow_stretch=True, keep_ratio=False,
                               size_hint=(1, 1), pos_hint={'x': 0, 'y': 0})
@@ -272,6 +277,7 @@ class PantallaCombate(Screen):
         self.zonaSprites.add_widget(self.imgJugador)
         self.zonaSprites.add_widget(self.imgEnemigo)
 
+        # ── Zona info turno/habilidad ─────────────────────────────────────────
         zonaInfo = BoxLayout(orientation='vertical', size_hint=(1, None), height=sh(72),
                              spacing=dp(2), padding=[dp(10), dp(4)])
         with zonaInfo.canvas.before:
@@ -291,6 +297,7 @@ class PantallaCombate(Screen):
         zonaInfo.add_widget(self.lblTurno)
         zonaInfo.add_widget(self.lblHabilidad)
 
+        # ── Zona log ──────────────────────────────────────────────────────────
         zonaLog = BoxLayout(orientation='vertical', size_hint=(1, 0.5),
                             padding=[dp(12), dp(8)], spacing=dp(4))
         with zonaLog.canvas.before:
@@ -311,6 +318,7 @@ class PantallaCombate(Screen):
         zonaLog.add_widget(lblLogTitulo)
         zonaLog.add_widget(scroll)
 
+        # ── Botones ───────────────────────────────────────────────────────────
         filaBotones = BoxLayout(orientation='horizontal', size_hint=(1, None), height=sh(90),
                                 spacing=dp(10), padding=[dp(8), dp(6)])
         self.btnVolver = _BotonImagen(
@@ -374,12 +382,20 @@ class PantallaCombate(Screen):
                 enemigo = nodo['enemigo']
                 self.nombreEnemigo  = enemigo.get('nombre', '')
                 self.vidaMaxEnemigo = max(1, enemigo.get('pv', 1))
-                self.lblNombreE.text = self.nombreEnemigo
                 self.barraE.setVidaInstantaneo(1.0)
 
                 # Determinar sprite del enemigo según nodo y facción del jugador
                 faccion = getattr(self.gm, 'faccion', None) or ''
                 self.spriteEnemigo = obtenerSpriteEnemigo(nodo_id, faccion)
+
+                # FIX nº3: nombre display a partir del sprite
+                # 'anomalia_guerrero_b' → 'Anomalia_Guerrero_B' → 'Cascarón Errante'
+                partes = self.spriteEnemigo.split('_')
+                nombre_key = '_'.join(p.capitalize() for p in partes)
+                nombre_display_enemigo = nombre_personaje(nombre_key) or self.nombreEnemigo
+                self.nombreEnemigo   = nombre_display_enemigo
+                self.lblNombreE.text = nombre_display_enemigo
+
                 self.imgEnemigo.source = obtenerRutaEnemigo(self.spriteEnemigo, ESTADO_IDLE)
                 self.imgEnemigo.reload()
 
@@ -449,15 +465,11 @@ class PantallaCombate(Screen):
                 lambda dt: self._setSpriteEnemigo(retorno), DURACION_SPRITE_ACCION)
 
     def _resolverSpriteEnemigoPostTurno(self, vida_j_antes, vida_e_antes, r):
-        """Anima el sprite del enemigo según lo que pasó en el turno."""
         if r['terminado'] and r['victoria']:
-            # Enemigo derrotado
             self._setSpriteEnemigo(ESTADO_DERROTA)
             return
-
         enemigo_ataco   = r['vida_jugador'] < vida_j_antes
         enemigo_recibio = r['vida_enemigo'] < vida_e_antes
-
         if enemigo_ataco:
             self._setSpriteEnemigo(ESTADO_ATACANDO, retorno=ESTADO_IDLE)
         elif enemigo_recibio:
@@ -577,7 +589,6 @@ class PantallaCombate(Screen):
                 self._log(linea.replace(self.nombreJugador, nombre_display))
         self._logSeparador()
 
-        # Animar jugador y enemigo
         self._resolverSpritePostTurno(vida_j_antes, vida_e_antes, r)
         self._resolverSpriteEnemigoPostTurno(vida_j_antes, vida_e_antes, r)
 
@@ -607,6 +618,8 @@ class PantallaCombate(Screen):
                 _PopupResultado(victoria=True, lineas_recompensa=lineas_rec).open()
             else:
                 _PopupResultado(victoria=False).open()
+
+    # ── Log ───────────────────────────────────────────────────────────────────
 
     def _log(self, texto):
         lbl = Label(

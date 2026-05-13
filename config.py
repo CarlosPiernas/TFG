@@ -35,7 +35,7 @@ ICONO_MAG        = 'assets/logos/Magia.png'
 ICONO_POCION     = 'assets/logos/potions.png'
 PAPIRO_ANOMALIA  = 'assets/fondos/papiroAnomalo.png'
 PAPIRO_GUARDIAN  = 'assets/fondos/papiroGuardian.png'
-ICONO_CAMPAÑA    = 'assets/logos/IconoCampaña.png'
+ICONO_CAMPAÑA    = 'assets/logos/IconoCampania.png'  # FIX: sin ñ para Android
 FONDO_HOME       = 'assets/fondos/FondoPantallaHome.jpg'
 
 FONDO_RUNA_ANOMALIA = 'assets/fondos/fondoRunaAnoma.jpg'
@@ -242,16 +242,17 @@ def lore_personaje(nombre_db: str) -> str:
 # ICONOS Y TEXTOS DE RUNAS
 # ══════════════════════════════════════════════════════
 
-ICONO_RUNA_ATAQUE   = 'assets/logos/runas/Ataque.png'
-ICONO_RUNA_MAGIA    = 'assets/logos/runas/Magia.png'
-ICONO_RUNA_DEFENSA  = 'assets/logos/runas/Defensa.png'
-ICONO_RUNA_DESTREZA = 'assets/logos/runas/Destreza.png'
-ICONO_RUNA_ACERO    = 'assets/logos/runas/Acero.png'
-ICONO_RUNA_CAZA     = 'assets/logos/runas/Caza.png'
-ICONO_RUNA_SOMBRA   = 'assets/logos/runas/Sombras.png'
-ICONO_RUNA_ARCANA   = 'assets/logos/runas/Arcana.png'
-ICONO_RUNA_GUARDIAN = 'assets/logos/runas/Guardian.png'
-ICONO_RUNA_ROTA     = 'assets/logos/runas/Rota.png'
+# FIX: carpeta Runas con R mayúscula para Android
+ICONO_RUNA_ATAQUE   = 'assets/logos/Runas/Ataque.png'
+ICONO_RUNA_MAGIA    = 'assets/logos/Runas/Magia.png'
+ICONO_RUNA_DEFENSA  = 'assets/logos/Runas/Defensa.png'
+ICONO_RUNA_DESTREZA = 'assets/logos/Runas/Destreza.png'
+ICONO_RUNA_ACERO    = 'assets/logos/Runas/Acero.png'
+ICONO_RUNA_CAZA     = 'assets/logos/Runas/Caza.png'
+ICONO_RUNA_SOMBRA   = 'assets/logos/Runas/Sombras.png'
+ICONO_RUNA_ARCANA   = 'assets/logos/Runas/Arcana.png'
+ICONO_RUNA_GUARDIAN = 'assets/logos/Runas/Guardian.png'
+ICONO_RUNA_ROTA     = 'assets/logos/Runas/Rota.png'
 
 RUNA_ICONOS = {
     'RUNA_ATAQUE':   ICONO_RUNA_ATAQUE,
@@ -326,9 +327,54 @@ PERSONAJES_CON_DADO        = {'guardian_asesino_s'}
 PERSONAJES_CON_BERSERKER_B = {'anomalia_guerrero_s'}
 
 
+# FIX: anomalia_asesino_b tiene la B mayúscula en TODOS sus estados como jugador
+_JUGADOR_B_MAYUS = {'anomalia_asesino_b'}
+
 def obtenerRutaJugador(nombre: str, estado: str) -> str:
     n = nombre.lower()
+    if n in _JUGADOR_B_MAYUS:
+        estado_archivo = estado[0].upper() + estado[1:]
+        return f'{RUTA_CHARACTERS}/{n}/{n}_{estado_archivo}.png'
     return f'{RUTA_CHARACTERS}/{n}/{n}_{estado}.png'
+
+
+# FIX: anomalia_asesino_b como enemigo solo tiene B mayúscula en inventario y splash
+_ENEMIGO_B_MAYUS = {'inventario', 'splash'}
+
+def obtenerRutaEnemigo(nombre_sprite: str, estado: str) -> str:
+    n = nombre_sprite.lower()
+    if n == 'anomalia_asesino_b' and estado in _ENEMIGO_B_MAYUS:
+        estado_archivo = estado[0].upper() + estado[1:]
+        return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado_archivo}.png'
+    return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado}.png'
+
+
+# FIX: guardian_asesino_s tiene el splash en .jpg en lugar de .png
+_SPLASH_JPG = {'guardian_asesino_s'}
+
+def obtenerExtensionSprite(nombre_sprite: str, estado: str) -> str:
+    if nombre_sprite.lower() in _SPLASH_JPG and estado == 'splash':
+        return '.jpg'
+    return '.png'
+
+
+def obtenerSpriteEnemigo(nodo_id: int, faccion: str) -> str:
+    """Devuelve el nombre del sprite del enemigo para un nodo y facción."""
+    fac = 'guardian' if 'guardian' in (faccion or '').lower() else 'anomalia'
+    return ENEMIGO_POR_NODO.get(fac, {}).get(nodo_id, 'anomalia_guerrero_b')
+
+
+def obtenerFondoNodo(nodo_id: int, faccion: str) -> str:
+    fac = 'Guardianes' if 'guardian' in (faccion or '').lower() else 'Anomalias'
+    if nodo_id <= 4:
+        archivo = f'Nodo1-4{fac}.jpg'
+    elif nodo_id == 5:
+        archivo = f'Nodo5{fac}.jpg'
+    elif nodo_id <= 9:
+        archivo = f'Nodo6-9{fac}.jpg'
+    else:
+        archivo = f'Nodo10{fac}.jpg'
+    return f'{RUTA_FONDOS_NODOS}/{archivo}'
 
 
 # ── Sprite de enemigo por nodo y facción del jugador ─────────────────────────
@@ -360,33 +406,3 @@ ENEMIGO_POR_NODO = {
         10: 'guardian_asesino_s',
     },
 }
-
-# anomalia_asesino_b tiene idle/derrota/inventario/splash con B mayúscula en el archivo
-_ASESINO_B_MAYUS = {'idle', 'derrota', 'inventario', 'splash'}
-
-def obtenerRutaEnemigo(nombre_sprite: str, estado: str) -> str:
-    """Ruta al sprite del enemigo según su nombre de sprite y estado."""
-    n = nombre_sprite.lower()
-    if n == 'anomalia_asesino_b' and estado in _ASESINO_B_MAYUS:
-        estado_archivo = estado[0].upper() + estado[1:]
-        return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado_archivo}.png'
-    return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado}.png'
-
-
-def obtenerSpriteEnemigo(nodo_id: int, faccion: str) -> str:
-    """Devuelve el nombre del sprite del enemigo para un nodo y facción."""
-    fac = 'guardian' if 'guardian' in (faccion or '').lower() else 'anomalia'
-    return ENEMIGO_POR_NODO.get(fac, {}).get(nodo_id, 'anomalia_guerrero_b')
-
-
-def obtenerFondoNodo(nodo_id: int, faccion: str) -> str:
-    fac = 'Guardianes' if 'guardian' in (faccion or '').lower() else 'Anomalias'
-    if nodo_id <= 4:
-        archivo = f'Nodo1-4{fac}.jpg'
-    elif nodo_id == 5:
-        archivo = f'Nodo5{fac}.jpg'
-    elif nodo_id <= 9:
-        archivo = f'Nodo6-9{fac}.jpg'
-    else:
-        archivo = f'Nodo10{fac}.jpg'
-    return f'{RUTA_FONDOS_NODOS}/{archivo}'

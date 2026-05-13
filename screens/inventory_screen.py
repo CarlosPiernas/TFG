@@ -254,9 +254,10 @@ class PantallaInventario(Screen):
             pos=lambda *a: setattr(self._stRect, 'pos', cajaStats.pos),
             size=lambda *a: setattr(self._stRect, 'size', cajaStats.size)
         )
+        # FIX: bajado de sf(12) a sf(9) para que quepa la habilidad especial
         self.lblStats = Label(
             text='Selecciona un item',
-            font_size=sf(12),
+            font_size=sf(9),
             color=BLANCO,
             bold=True,
             halign='left',
@@ -294,9 +295,10 @@ class PantallaInventario(Screen):
             pos=lambda *a: setattr(self._panelRect, 'pos', panelExplicativo.pos),
             size=lambda *a: setattr(self._panelRect, 'size', panelExplicativo.size)
         )
+        # FIX: subido de sf(11) a sf(13) para mejor legibilidad del lore
         self.lblDescripcion = Label(
             text='Selecciona un item para ver su descripción.',
-            font_size=sf(11),
+            font_size=sf(13),
             color=BLANCO,
             italic=True,
             halign='left',
@@ -630,8 +632,6 @@ class PantallaInventario(Screen):
         self._cargarItems(self.categoriaActual)
 
     def _popupSlotRuna(self, inv_id: int):
-        """Pregunta al jugador en qué slot equipar la runa.
-        Cada opción muestra la imagen SLOT_RUNA_VACIO con el texto encima."""
         modal = ModalView(size_hint=(0.7, 0.42), background_color=(0, 0, 0, 0))
 
         cont = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
