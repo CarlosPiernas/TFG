@@ -151,7 +151,7 @@ class PantallaMapa(Screen):
     # ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     def on_pre_enter(self, *args):
-        self._pagina = 0
+        self._pagina = getattr(self, '_pagina_guardada', 0)   # restaurar, o 0 si es la primera vez
         self._construir_pagina()
 
     # ── Construcción de página ────────────────────────────────────────────────
@@ -248,6 +248,7 @@ class PantallaMapa(Screen):
 
     def _ir_combate(self):
         self.manager.transition = SlideTransition(direction='left')
+        self._pagina_guardada = self._pagina          # guardar página
         self.manager.current    = 'combate'
 
     def _volver(self):
