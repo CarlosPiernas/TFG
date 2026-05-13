@@ -29,11 +29,14 @@ class MapaRepo:
     def completar_nodo(self, nodo_id: int, estrellas: int):
         #Marca un nodo como completado y desbloquea el siguiente si existe.
         #Guarda las estrellas solo si son mejores que las anteriores.
+        #Incrementa intentos cada vez que se completa (usado para ataque sorpresa).
         conn = get_connection()
         try:
             conn.execute("""
                 UPDATE progreso_mapa
-                SET estado = 'completado', estrellas = MAX(estrellas, ?)
+                SET estado    = 'completado',
+                    estrellas = MAX(estrellas, ?),
+                    intentos  = intentos + 1
                 WHERE nodo_id = ?
             """, (estrellas, nodo_id))
 

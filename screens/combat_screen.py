@@ -11,46 +11,39 @@ from kivy.clock import Clock
 
 from config import (
     FONDO_PRINCIPAL, PANEL_OSCURO, PANEL_MEDIO,
-    BLANCO, GRIS, COLOR_GUARDIANES, COLOR_ANOMALIAS
+    BLANCO, GRIS, COLOR_GUARDIANES, COLOR_ANOMALIAS,
+    FONDO_HOME,
+    BOTON_PELEAR_COMBATE, BOTON_VOLVER_COMBATE,
+    BORDE_LOG_COMBATE, CUADRO_ESPECIAL_COMBATE,
+    nombre_personaje, nombre_runa,
+    DURACION_SPRITE_ACCION,
+    ESTADO_IDLE, ESTADO_ATACANDO, ESTADO_BLOQUEANDO, ESTADO_DERROTA,
+    ESTADO_COUNTER, ESTADO_DADO,
+    ESTADO_IDLE_B, ESTADO_ATACANDO_B, ESTADO_BLOQUEANDO_B,
+    PERSONAJES_CON_COUNTER, PERSONAJES_CON_DADO, PERSONAJES_CON_BERSERKER_B,
+    obtenerRutaJugador, obtenerRutaEnemigo, obtenerFondoNodo,
 )
 from widgets.componentes import BotonRedondeado
 from widgets.responsive import sw, sh, sf, sdp
 
 from logic.Combate.Encuentro import Encuentro
+from logic.Clases.Guerrero import Guerrero
+from logic.Clases.Mago import Mago
+from logic.Clases.Asesino import Asesino
 
-# ─────────────────────────────────────────────────────────────────────────────
-# RUTAS DE SPRITES Y FONDOS
-# ─────────────────────────────────────────────────────────────────────────────
-RUTA_FONDOS_NODOS = 'assets/fondos/FondosNodos'
+# Color de texto del log (negro puro)
+COLOR_LOG = (0, 0, 0, 1)
 
-ESTADO_IDLE    = 'idle'
-ESTADO_DERROTA = 'derrota'
-
-
-def obtenerRutaJugador(nombre, estado):
-    n = nombre.lower()
-    return f'assets/characters/{n}/{n}_{estado}.png'
-
-
-def obtenerRutaEnemigo(nombre, estado):
-    return f'assets/personajes/PersonajesS/BOT/{nombre}/{nombre}{estado}.png'
-
-
-def obtenerFondoNodo(nodo_id: int, faccion: str) -> str:
-    fac = 'Guardianes' if 'guardian' in (faccion or '').lower() else 'Anomalias'
-    if nodo_id <= 4:
-        nombre = f'Nodo1-4{fac}.jpg'
-    elif nodo_id == 5:
-        nombre = f'Nodo5{fac}.jpg'
-    elif nodo_id <= 9:
-        nombre = f'Nodo6-9{fac}.jpg'
-    else:
-        nombre = f'Nodo10{fac}.jpg'
-    return f'{RUTA_FONDOS_NODOS}/{nombre}'
+# Colores para el panel de habilidad especial
+COLOR_BERSERKER_ON  = (1.0, 0.55, 0.0, 1)
+COLOR_COUNTER_OK    = (0.3, 0.85, 1.0, 1)
+COLOR_COUNTER_USADO = (0.5, 0.5,  0.5, 1)
+COLOR_DADO_SUERTE   = (1.0, 0.85, 0.0, 1)
+COLOR_DADO_FALLO    = (0.7, 0.7,  0.7, 1)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BARRA DE VIDA con animación suave
+# BARRA DE VIDA con animacion suave
 # ─────────────────────────────────────────────────────────────────────────────
 
 class _BarraVida(BoxLayout):
@@ -111,6 +104,57 @@ class _BarraVida(BoxLayout):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# BOTON CON IMAGEN DE FONDO
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _BotonImagen(FloatLayout):
+    def __init__(self, texto, ruta_img, color_texto=None, font_size=None,
+                 on_press=None, **kwargs):
+        super().__init__(**kwargs)
+        self._callback = on_press
+
+        self._img = Image(
+            source=ruta_img,
+            allow_stretch=True, keep_ratio=False,
+            size_hint=(1, 1), pos_hint={'x': 0, 'y': 0},
+        )
+        self._lbl = Label(
+            text=texto,
+            font_size=font_size or dp(18),
+            bold=True,
+            color=color_texto or BLANCO,
+            size_hint=(1, 1), pos_hint={'x': 0, 'y': 0},
+            halign='center', valign='middle',
+        )
+        self._lbl.bind(size=self._lbl.setter('text_size'))
+        self.add_widget(self._img)
+        self.add_widget(self._lbl)
+        self.bind(on_touch_down=self._on_touch)
+
+    def _on_touch(self, instance, touch):
+        if self.collide_point(*touch.pos) and self._callback:
+            self._callback(self)
+            return True
+
+    @property
+    def text(self):
+        return self._lbl.text
+
+    @text.setter
+    def text(self, val):
+        self._lbl.text = val
+
+    @property
+    def disabled(self):
+        return self._img.opacity < 0.5
+
+    @disabled.setter
+    def disabled(self, val):
+        self._img.opacity = 0.4 if val else 1.0
+        self._lbl.opacity = 0.4 if val else 1.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # POPUP bloqueado durante combate
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -143,8 +187,65 @@ class _PopupBloqueado(ModalView):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PANTALLA DE COMBATE
+# POPUP RESULTADO COMBATE
 # ─────────────────────────────────────────────────────────────────────────────
+
+class _PopupResultado(ModalView):
+    def __init__(self, victoria, lineas_recompensa=None, **kwargs):
+        super().__init__(size_hint=(0.85, None), height=sh(280),
+                         background_color=(0, 0, 0, 0), auto_dismiss=False, **kwargs)
+
+        caja = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
+        with caja.canvas.before:
+            Color(*PANEL_OSCURO)
+            self._r = RoundedRectangle(pos=caja.pos, size=caja.size, radius=[dp(14)])
+        caja.bind(
+            pos=lambda *a: setattr(self._r, 'pos', caja.pos),
+            size=lambda *a: setattr(self._r, 'size', caja.size),
+        )
+
+        # Título grande
+        color_titulo = COLOR_GUARDIANES if victoria else COLOR_ANOMALIAS
+        texto_titulo = '¡VICTORIA!' if victoria else '¡DERROTA!'
+        lbl_titulo = Label(
+            text=texto_titulo,
+            font_size=sf(32), bold=True, color=color_titulo,
+            size_hint=(1, None), height=sh(50),
+            halign='center', valign='middle',
+        )
+        lbl_titulo.bind(size=lbl_titulo.setter('text_size'))
+        caja.add_widget(lbl_titulo)
+
+        # Contenido
+        if victoria and lineas_recompensa:
+            for linea in lineas_recompensa:
+                lbl = Label(
+                    text=linea,
+                    font_size=sf(13), bold=True, color=BLANCO,
+                    size_hint=(1, None), height=sh(24),
+                    halign='center', valign='middle',
+                )
+                lbl.bind(size=lbl.setter('text_size'))
+                caja.add_widget(lbl)
+        else:
+            lbl_sub = Label(
+                text='Intentalo mas adelante',
+                font_size=sf(14), color=GRIS,
+                size_hint=(1, None), height=sh(28),
+                halign='center', valign='middle',
+            )
+            lbl_sub.bind(size=lbl_sub.setter('text_size'))
+            caja.add_widget(lbl_sub)
+
+        # Botón cerrar
+        btn = BotonRedondeado(
+            text='CONTINUAR', bg_color=color_titulo, text_color=FONDO_PRINCIPAL,
+            radius=8, size_hint=(0.5, None), height=sh(42), font_size=sf(12), bold=True,
+            pos_hint={'center_x': 0.5},
+        )
+        btn.bind(on_press=lambda *a: self.dismiss())
+        caja.add_widget(btn)
+        self.add_widget(caja)
 
 class PantallaCombate(Screen):
     def __init__(self, gm=None, **kwargs):
@@ -153,13 +254,15 @@ class PantallaCombate(Screen):
         self.nombreJugador  = ''
         self.nombreEnemigo  = ''
         self.vidaMaxJugador = 1
-        self.vidaMaxEnemigo = 1   # se actualiza con vida_max_e del Encuentro al primer turno
+        self.vidaMaxEnemigo = 1
         self._encuentro     = None
         self._en_combate    = False
+        self._timer_sprite  = None
+        self._counter_usado = False
 
         with self.canvas.before:
-            Color(*FONDO_PRINCIPAL)
-            self._bg = Rectangle(pos=self.pos, size=self.size)
+            Color(1, 1, 1, 1)
+            self._bg = Rectangle(source=FONDO_HOME, pos=self.pos, size=self.size)
         self.bind(pos=self._actualizarFondo, size=self._actualizarFondo)
 
         raiz = BoxLayout(orientation='vertical', padding=dp(8), spacing=dp(5))
@@ -168,33 +271,33 @@ class PantallaCombate(Screen):
         filaVida = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=sh(38),
+            height=sh(88),
             spacing=dp(6),
         )
 
-        colJ = BoxLayout(orientation='vertical', size_hint=(0.44, 1), spacing=dp(2))
+        colJ = BoxLayout(orientation='vertical', size_hint=(0.42, 1), spacing=dp(2))
         self.lblNombreJ = Label(
-            text='—', font_size=sf(9), color=COLOR_GUARDIANES, bold=True,
-            size_hint=(1, None), height=sh(14), halign='left', valign='middle',
+            text='', font_size=sf(19), color=COLOR_GUARDIANES, bold=True,
+            size_hint=(1, None), height=sh(30), halign='left', valign='middle',
         )
         self.lblNombreJ.bind(size=self.lblNombreJ.setter('text_size'))
-        self.barraJ = _BarraVida(color=COLOR_GUARDIANES, size_hint=(1, None), height=sh(16))
+        self.barraJ = _BarraVida(color=COLOR_GUARDIANES, size_hint=(1, None), height=sh(32))
         colJ.add_widget(self.lblNombreJ)
         colJ.add_widget(self.barraJ)
 
         lblVS = Label(
-            text='VS', font_size=sf(13), bold=True, color=GRIS,
-            size_hint=(0.12, 1), halign='center', valign='middle',
+            text='VS', font_size=sf(26), bold=True, color=BLANCO,
+            size_hint=(0.16, 1), halign='center', valign='middle',
         )
         lblVS.bind(size=lblVS.setter('text_size'))
 
-        colE = BoxLayout(orientation='vertical', size_hint=(0.44, 1), spacing=dp(2))
+        colE = BoxLayout(orientation='vertical', size_hint=(0.42, 1), spacing=dp(2))
         self.lblNombreE = Label(
-            text='—', font_size=sf(9), color=COLOR_ANOMALIAS, bold=True,
-            size_hint=(1, None), height=sh(14), halign='right', valign='middle',
+            text='', font_size=sf(19), color=COLOR_ANOMALIAS, bold=True,
+            size_hint=(1, None), height=sh(30), halign='right', valign='middle',
         )
         self.lblNombreE.bind(size=self.lblNombreE.setter('text_size'))
-        self.barraE = _BarraVida(color=COLOR_ANOMALIAS, size_hint=(1, None), height=sh(16))
+        self.barraE = _BarraVida(color=COLOR_ANOMALIAS, size_hint=(1, None), height=sh(32))
         colE.add_widget(self.lblNombreE)
         colE.add_widget(self.barraE)
 
@@ -203,7 +306,7 @@ class PantallaCombate(Screen):
         filaVida.add_widget(colE)
 
         # ── 2. SPRITES CON FONDO DE NODO ──────────────────────────────────────
-        self.zonaSprites = FloatLayout(size_hint=(1, 0.38))
+        self.zonaSprites = FloatLayout(size_hint=(1, 0.43))
 
         self.imgFondo = Image(
             source='', allow_stretch=True, keep_ratio=False,
@@ -211,27 +314,26 @@ class PantallaCombate(Screen):
         )
         self.imgJugador = Image(
             source='', allow_stretch=True, keep_ratio=True,
-            size_hint=(0.45, 1), pos_hint={'x': 0.02, 'y': 0},
+            size_hint=(0.60, 1.2), pos_hint={'x': -0.02, 'y': -0.05},
         )
         self.imgEnemigo = Image(
             source='', allow_stretch=True, keep_ratio=True,
-            size_hint=(0.45, 1), pos_hint={'x': 0.53, 'y': 0},
+            size_hint=(0.60, 1.2), pos_hint={'x': 0.42, 'y': -0.05},
         )
-
         self.zonaSprites.add_widget(self.imgFondo)
         self.zonaSprites.add_widget(self.imgJugador)
         self.zonaSprites.add_widget(self.imgEnemigo)
 
-        # ── 3. TURNO + HABILIDAD ESPECIAL ─────────────────────────────────────
+        # ── 3. TURNO + HABILIDAD ESPECIAL ────────────────────────────────────
         zonaInfo = BoxLayout(
             orientation='vertical',
             size_hint=(1, None),
-            height=sh(48),
+            height=sh(72),
             spacing=dp(2),
             padding=[dp(10), dp(4)],
         )
         with zonaInfo.canvas.before:
-            Color(*PANEL_OSCURO)
+            Color(0, 0, 0, 0.65)
             self._rectInfo = RoundedRectangle(
                 pos=zonaInfo.pos, size=zonaInfo.size, radius=[dp(8)]
             )
@@ -241,15 +343,15 @@ class PantallaCombate(Screen):
         )
 
         self.lblTurno = Label(
-            text='TURNO 1', font_size=sf(12), bold=True, color=COLOR_GUARDIANES,
-            size_hint=(1, None), height=sh(20), halign='center', valign='middle',
+            text='TURNO 1', font_size=sf(15), bold=True, color=COLOR_GUARDIANES,
+            size_hint=(1, None), height=sh(26), halign='center', valign='middle',
         )
         self.lblTurno.bind(size=self.lblTurno.setter('text_size'))
 
         self.lblHabilidad = Label(
-            text='HABILIDAD ESPECIAL: —',
-            font_size=sf(10), color=GRIS,
-            size_hint=(1, None), height=sh(18),
+            text='',
+            font_size=sf(12), bold=True, color=GRIS,
+            size_hint=(1, None), height=sh(22),
             halign='center', valign='middle',
             opacity=0,
         )
@@ -258,15 +360,15 @@ class PantallaCombate(Screen):
         zonaInfo.add_widget(self.lblTurno)
         zonaInfo.add_widget(self.lblHabilidad)
 
-        # ── 4. LOG ────────────────────────────────────────────────────────────
+        # ── 4. LOG — panel negro transparente, sin imagen de fondo ────────────
         zonaLog = BoxLayout(
             orientation='vertical',
-            size_hint=(1, 1),
-            spacing=dp(2),
-            padding=dp(6),
+            size_hint=(1, 0.5),
+            padding=[dp(12), dp(8)],
+            spacing=dp(4),
         )
         with zonaLog.canvas.before:
-            Color(*PANEL_OSCURO)
+            Color(0, 0, 0, 0.65)
             self._rectLog = RoundedRectangle(
                 pos=zonaLog.pos, size=zonaLog.size, radius=[dp(8)]
             )
@@ -277,8 +379,8 @@ class PantallaCombate(Screen):
 
         lblLogTitulo = Label(
             text='EVENTOS DE COMBATE',
-            font_size=sf(9), bold=True, color=COLOR_GUARDIANES,
-            size_hint=(1, None), height=sh(18), halign='center', valign='middle',
+            font_size=sf(13), bold=True, color=COLOR_GUARDIANES,
+            size_hint=(1, None), height=sh(24), halign='center', valign='middle',
         )
         lblLogTitulo.bind(size=lblLogTitulo.setter('text_size'))
 
@@ -296,36 +398,32 @@ class PantallaCombate(Screen):
         filaBotones = BoxLayout(
             orientation='horizontal',
             size_hint=(1, None),
-            height=sh(52),
+            height=sh(90),
             spacing=dp(10),
-            padding=[dp(10), dp(6)],
-        )
-        with filaBotones.canvas.before:
-            Color(*PANEL_OSCURO)
-            self._rectBtn = RoundedRectangle(
-                pos=filaBotones.pos, size=filaBotones.size,
-                radius=[dp(16), dp(16), 0, 0],
-            )
-        filaBotones.bind(
-            pos=lambda *a: setattr(self._rectBtn, 'pos', filaBotones.pos),
-            size=lambda *a: setattr(self._rectBtn, 'size', filaBotones.size),
+            padding=[dp(8), dp(6)],
         )
 
-        self.btnVolver = BotonRedondeado(
-            text='MAPA', bg_color=PANEL_MEDIO, text_color=BLANCO,
-            radius=8, size_hint=(1, 1), font_size=dp(12), bold=True,
+        self.btnVolver = _BotonImagen(
+            texto='VOLVER',
+            ruta_img=BOTON_VOLVER_COMBATE,
+            color_texto=BLANCO,
+            font_size=dp(16),
+            on_press=self._onVolver,
+            size_hint=(1, 1),
         )
-        self.btnVolver.bind(on_press=self._onVolver)
-
-        self.btnCombate = BotonRedondeado(
-            text='PELEAR', bg_color=COLOR_GUARDIANES, text_color=FONDO_PRINCIPAL,
-            radius=8, size_hint=(1, 1), font_size=dp(12), bold=True,
+        self.btnCombate = _BotonImagen(
+            texto='',
+            ruta_img=BOTON_PELEAR_COMBATE,
+            color_texto=BLANCO,
+            font_size=dp(18),
+            on_press=self._onPelear,
+            size_hint=(1, 1),
         )
-        self.btnCombate.bind(on_press=self._onPelear)
 
         filaBotones.add_widget(self.btnVolver)
         filaBotones.add_widget(self.btnCombate)
 
+        # ── ENSAMBLAR ─────────────────────────────────────────────────────────
         raiz.add_widget(filaVida)
         raiz.add_widget(self.zonaSprites)
         raiz.add_widget(zonaInfo)
@@ -346,62 +444,142 @@ class PantallaCombate(Screen):
     # ─────────────────────────────────────────────────────
 
     def _reset(self):
+        self._cancelarTimerSprite()
         self.limpiarLog()
         self.barraJ.setVidaInstantaneo(1.0)
         self.barraE.setVidaInstantaneo(1.0)
         self.lblTurno.text        = 'TURNO 1'
-        self.btnCombate.text      = 'PELEAR'
+        self.btnCombate.text      = ''
         self.btnCombate.disabled  = False
         self.lblHabilidad.opacity = 0
-        self._en_combate  = False
-        self._encuentro   = None
-        self.vidaMaxEnemigo = 1   # se fijará en el primer turno_paso
+        self.lblHabilidad.text    = ''
+        self._en_combate    = False
+        self._encuentro     = None
+        self.vidaMaxEnemigo = 1
+        self._counter_usado = False
 
     def _cargarDatos(self):
         if self.gm is None:
             return
 
-        # ── Jugador ──────────────────────────────────────────────────────────
         info = self.gm.get_personaje_activo_info()
         if info:
-            self.nombreJugador = info.get('nombre', '')
-            self.lblNombreJ.text = self.nombreJugador
+            self.nombreJugador   = info.get('nombre', '')
+            self.lblNombreJ.text = nombre_personaje(self.nombreJugador) or self.nombreJugador
 
-            # vida_max real desde BD (incluye bonuses de equipo)
-            vida_db = self.gm.get_recursos() or {}
+            vida_db     = self.gm.get_recursos() or {}
             vida_actual = vida_db.get('vida_actual', info.get('pv_base', 1))
             vida_max    = vida_db.get('vida_max',    info.get('pv_base', 1))
             self.vidaMaxJugador = max(1, vida_max)
-
-            pct = vida_actual / self.vidaMaxJugador
-            self.barraJ.setVidaInstantaneo(pct)
+            self.barraJ.setVidaInstantaneo(vida_actual / self.vidaMaxJugador)
 
             if self.nombreJugador:
                 self.imgJugador.source = obtenerRutaJugador(self.nombreJugador, ESTADO_IDLE)
                 self.imgJugador.reload()
 
-        # ── Enemigo ───────────────────────────────────────────────────────────
         nodo_id = getattr(self.gm, 'nodo_seleccionado', None)
         if nodo_id is not None:
             nodo = self.gm.get_nodo(nodo_id)
             if nodo and nodo.get('enemigo'):
                 enemigo = nodo['enemigo']
-                self.nombreEnemigo = enemigo.get('nombre', '')
-                # vida_max del enemigo desde el nodo (referencia inicial)
-                self.vidaMaxEnemigo = max(1, enemigo.get('pv', 1))
+                self.nombreEnemigo   = enemigo.get('nombre', '')
+                self.vidaMaxEnemigo  = max(1, enemigo.get('pv', 1))
                 self.lblNombreE.text = self.nombreEnemigo
                 self.barraE.setVidaInstantaneo(1.0)
                 if self.nombreEnemigo:
-                    self.imgEnemigo.source = obtenerRutaEnemigo(
-                        self.nombreEnemigo, ESTADO_IDLE
-                    )
+                    self.imgEnemigo.source = obtenerRutaEnemigo(self.nombreEnemigo, ESTADO_IDLE)
                     self.imgEnemigo.reload()
 
-            # Fondo de nodo
             faccion = getattr(self.gm, 'faccion', None)
             if faccion:
                 self.imgFondo.source = obtenerFondoNodo(nodo_id, faccion)
                 self.imgFondo.reload()
+
+    # ─────────────────────────────────────────────────────
+    # SPRITES DEL JUGADOR
+    # ─────────────────────────────────────────────────────
+
+    def _cancelarTimerSprite(self):
+        if self._timer_sprite:
+            self._timer_sprite.cancel()
+            self._timer_sprite = None
+
+    def _setSpriteJugador(self, estado, retorno=None):
+        self._cancelarTimerSprite()
+        if not self.nombreJugador:
+            return
+        self.imgJugador.source = obtenerRutaJugador(self.nombreJugador, estado)
+        self.imgJugador.reload()
+        if retorno is not None:
+            self._timer_sprite = Clock.schedule_once(
+                lambda dt: self._setSpriteJugador(retorno),
+                DURACION_SPRITE_ACCION,
+            )
+
+    def _resolverSpritePostTurno(self, vida_j_antes, vida_e_antes, r):
+        nombre_lower = self.nombreJugador.lower()
+
+        if r['terminado'] and not r['victoria']:
+            self._setSpriteJugador(ESTADO_DERROTA)
+            return
+
+        jugador_ataco   = r['vida_enemigo'] < vida_e_antes
+        jugador_recibio = r['vida_jugador'] < vida_j_antes
+
+        if r['counter'] and nombre_lower in PERSONAJES_CON_COUNTER:
+            self._setSpriteJugador(ESTADO_COUNTER, retorno=ESTADO_IDLE)
+            return
+
+        if r['dado'] and nombre_lower in PERSONAJES_CON_DADO:
+            self._setSpriteJugador(ESTADO_DADO, retorno=ESTADO_IDLE)
+            return
+
+        if r['berserker'] and nombre_lower in PERSONAJES_CON_BERSERKER_B:
+            if jugador_ataco:
+                self._setSpriteJugador(ESTADO_ATACANDO_B, retorno=ESTADO_IDLE_B)
+            elif jugador_recibio:
+                self._setSpriteJugador(ESTADO_BLOQUEANDO_B, retorno=ESTADO_IDLE_B)
+            else:
+                self._setSpriteJugador(ESTADO_IDLE_B)
+            return
+
+        if jugador_ataco:
+            self._setSpriteJugador(ESTADO_ATACANDO, retorno=ESTADO_IDLE)
+        elif jugador_recibio:
+            self._setSpriteJugador(ESTADO_BLOQUEANDO, retorno=ESTADO_IDLE)
+
+    # ─────────────────────────────────────────────────────
+    # PANEL DE HABILIDAD ESPECIAL
+    # ─────────────────────────────────────────────────────
+
+    def _actualizarHabilidad(self, jugador_obj, r):
+        if isinstance(jugador_obj, Guerrero):
+            if r['berserker']:
+                self.lblHabilidad.text  = 'BERSERKER ACTIVO'
+                self.lblHabilidad.color = COLOR_BERSERKER_ON
+            else:
+                self.lblHabilidad.text  = 'Berserker: inactivo'
+                self.lblHabilidad.color = GRIS
+
+        elif isinstance(jugador_obj, Mago):
+            if r['counter']:
+                self._counter_usado = True
+            if self._counter_usado:
+                self.lblHabilidad.text  = 'Counter: YA USADO'
+                self.lblHabilidad.color = COLOR_COUNTER_USADO
+            else:
+                self.lblHabilidad.text  = 'Counter: DISPONIBLE'
+                self.lblHabilidad.color = COLOR_COUNTER_OK
+
+        elif isinstance(jugador_obj, Asesino):
+            resultado = r['dado_resultado']
+            destreza  = jugador_obj.destreza
+            if r['dado']:
+                self.lblHabilidad.text  = f'Tirada: {resultado}/{destreza}  SUERTE!'
+                self.lblHabilidad.color = COLOR_DADO_SUERTE
+            else:
+                self.lblHabilidad.text  = f'Tirada: {resultado}/{destreza}'
+                self.lblHabilidad.color = COLOR_DADO_FALLO
 
     # ─────────────────────────────────────────────────────
     # BOTONES
@@ -411,6 +589,7 @@ class PantallaCombate(Screen):
         if self._en_combate:
             _PopupBloqueado().open()
             return
+        self._cancelarTimerSprite()
         self.manager.transition = SlideTransition(direction='right')
         self.manager.current    = 'mapa'
 
@@ -420,7 +599,7 @@ class PantallaCombate(Screen):
 
         nodo_id = getattr(self.gm, 'nodo_seleccionado', None)
         if nodo_id is None:
-            self._log('⚠ No hay nodo seleccionado.')
+            self._log('No hay nodo seleccionado.')
             return
 
         # Modo REPETIR
@@ -429,85 +608,104 @@ class PantallaCombate(Screen):
             self._cargarDatos()
             return
 
-        # Primera pulsación: preparar combate
+        # Primera pulsacion: preparar combate
         if self._encuentro is None:
             resultado_init = self.gm.preparar_combate(nodo_id)
             if resultado_init is None:
-                self._log('⚠ No se pudo iniciar el combate.')
+                self._log('No se pudo iniciar el combate.')
                 return
 
             jugador_obj = resultado_init.get('jugador')
             enemigo_obj = resultado_init.get('enemigo')
             if jugador_obj is None or enemigo_obj is None:
-                self._log('⚠ Faltan datos de combate.')
+                self._log('Faltan datos de combate.')
                 return
 
-            self._encuentro = Encuentro()
-            self._encuentro.preparar(jugador_obj, enemigo_obj)
-            self._en_combate = True
+            # ── Ataque sorpresa: calcular prob según intentos previos en BD
+            prob_sorpresa = 0.0
+            try:
+                nodo_info = self.gm._mapa_repo.get_nodo(nodo_id)
+                if nodo_info and nodo_info['estado'] == 'completado':
+                    intentos = nodo_info.get('intentos', 0)
+                    if intentos == 1:
+                        prob_sorpresa = 0.10
+                    elif intentos == 2:
+                        prob_sorpresa = 0.20
+                    elif intentos >= 3:
+                        prob_sorpresa = 0.30
+            except Exception:
+                prob_sorpresa = 0.0
 
-            # Fijar vida_max del enemigo desde el objeto real de combate
+            self._encuentro = Encuentro()
+            self._encuentro.preparar(jugador_obj, enemigo_obj, prob_sorpresa=prob_sorpresa)
+            self._en_combate    = True
             self.vidaMaxEnemigo = max(1, enemigo_obj.vida_max)
 
-            self.limpiarLog()
-            self._log(f'⚔️  {jugador_obj.nombre}  vs  {enemigo_obj.nombre}')
-            self._log('─' * 38)
-
-            from logic.Clases.Guerrero import Guerrero
-            if isinstance(jugador_obj, Guerrero):
+            # Mostrar panel habilidad para las 3 clases
+            if isinstance(jugador_obj, (Guerrero, Mago, Asesino)):
                 self.lblHabilidad.opacity = 1
-                self.lblHabilidad.text    = 'HABILIDAD ESPECIAL: Berserker inactivo'
-                self.lblHabilidad.color   = GRIS
+                if isinstance(jugador_obj, Guerrero):
+                    self.lblHabilidad.text  = 'Berserker: inactivo'
+                    self.lblHabilidad.color = GRIS
+                elif isinstance(jugador_obj, Mago):
+                    self.lblHabilidad.text  = 'Counter: DISPONIBLE'
+                    self.lblHabilidad.color = COLOR_COUNTER_OK
+                elif isinstance(jugador_obj, Asesino):
+                    self.lblHabilidad.text  = 'Tirada: -- / --'
+                    self.lblHabilidad.color = GRIS
 
-        # Ejecutar un turno
+        # ── Guardar vida ANTES del turno ────────────────────────────────────
+        vida_j_antes = self._encuentro.jugador.vida
+        vida_e_antes = self._encuentro.enemigo.vida
+
+        # ── Ejecutar un turno ───────────────────────────────────────────────
         r = self._encuentro.turno_paso()
 
-        # Actualizar turno
+        # ── Actualizar UI ───────────────────────────────────────────────────
         self.lblTurno.text = f'TURNO {r["turno"]}'
+        self.barraJ.animarHasta(r['vida_jugador'] / max(1, self.vidaMaxJugador))
+        self.barraE.animarHasta(r['vida_enemigo'] / max(1, r['vida_max_e']))
 
-        # Barra jugador
-        pct_j = r['vida_jugador'] / max(1, self.vidaMaxJugador)
-        self.barraJ.animarHasta(pct_j)
-
-        # Barra enemigo — usa vida_max_e del propio objeto de combate
-        # para garantizar que el porcentaje siempre sea correcto
-        pct_e = r['vida_enemigo'] / max(1, r['vida_max_e'])
-        self.barraE.animarHasta(pct_e)
-
-        # Habilidad especial
+        jugador_obj = self._encuentro.jugador
         if self.lblHabilidad.opacity > 0:
-            if r['berserker']:
-                self.lblHabilidad.text  = 'HABILIDAD ESPECIAL: ⚔️ BERSERKER ACTIVO'
-                self.lblHabilidad.color = (1.0, 0.55, 0.0, 1)
-            else:
-                self.lblHabilidad.text  = 'HABILIDAD ESPECIAL: Berserker inactivo'
-                self.lblHabilidad.color = GRIS
+            self._actualizarHabilidad(jugador_obj, r)
 
-        # Log
+        # Nombre display del jugador para sustituir en el log
+        nombre_display = nombre_personaje(self.nombreJugador) or self.nombreJugador
         for linea in r['lineas']:
             if linea.strip():
-                self._log(linea)
+                self._log(linea.replace(self.nombreJugador, nombre_display))
+        # Separador visual entre turnos
+        self._logSeparador()
 
-        # Fin del combate
+        # ── Cambiar sprite ──────────────────────────────────────────────────
+        self._resolverSpritePostTurno(vida_j_antes, vida_e_antes, r)
+
+        # ── Fin del combate — solo una vez ──────────────────────────────────
         if r['terminado']:
             self._en_combate     = False
-            self.btnCombate.text = 'REPETIR'
+            self.btnCombate.text = ''
 
             if self.gm:
                 self.gm.persistir_vida_tras_combate(r['vida_jugador'], r['vida_max_j'])
 
             if r['victoria']:
-                self._log('🏆  ¡VICTORIA!')
                 recompensas = self.gm.aplicar_recompensas_nodo(nodo_id) if self.gm else {}
+                lineas_rec = []
                 if recompensas:
-                    self._log(f'💰 Recompensas: {recompensas}')
+                    if recompensas.get('monedas'):
+                        lineas_rec.append(f'Monedas: +{recompensas["monedas"]}')
+                    if recompensas.get('runa'):
+                        lineas_rec.append(f'Runa obtenida: {nombre_runa(recompensas["runa"])}')
+                    if recompensas.get('ticket_personaje'):
+                        lineas_rec.append('Ticket de personaje obtenido')
+                    if recompensas.get('ticket_arma'):
+                        lineas_rec.append('Ticket de arma obtenido')
+                    if recompensas.get('transmutador'):
+                        lineas_rec.append('Transmutador obtenido')
+                _PopupResultado(victoria=True, lineas_recompensa=lineas_rec).open()
             else:
-                self._log('💀  DERROTA')
-                if self.nombreJugador:
-                    self.imgJugador.source = obtenerRutaJugador(
-                        self.nombreJugador, ESTADO_DERROTA
-                    )
-                    self.imgJugador.reload()
+                _PopupResultado(victoria=False).open()
 
     # ─────────────────────────────────────────────────────
     # LOG
@@ -515,9 +713,14 @@ class PantallaCombate(Screen):
 
     def _log(self, texto):
         lbl = Label(
-            text=texto, font_size=sf(10), color=BLANCO,
-            size_hint=(1, None), height=sh(20),
-            halign='left', valign='middle',
+            text=texto,
+            font_size=sf(13),
+            bold=True,
+            color=BLANCO,
+            size_hint=(1, None),
+            height=sh(22),
+            halign='left',
+            valign='middle',
         )
         lbl.bind(size=lbl.setter('text_size'))
         self.contenidoLog.add_widget(lbl)
@@ -527,6 +730,15 @@ class PantallaCombate(Screen):
 
     def limpiarLog(self):
         self.contenidoLog.clear_widgets()
+
+    def _logSeparador(self):
+        """Línea vacía entre turnos para separar visualmente los eventos."""
+        lbl = Label(
+            text='',
+            size_hint=(1, None),
+            height=sh(8),
+        )
+        self.contenidoLog.add_widget(lbl)
 
     # ─────────────────────────────────────────────────────
     # FONDO
