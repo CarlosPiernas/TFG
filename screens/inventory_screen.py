@@ -19,10 +19,18 @@ from config import (
     MARCO_BOTON, BOTON_FORJAR,
     FONDO_HOME, FONDO_RUNA_ANOMALIA, FONDO_RUNA_GUARDIAN,
     PLACEHOLDER, ICONO_POCION,
+    SLOT_RUNA_VACIO,
     icono_arma, nombre_arma, lore_arma,
     icono_runa, nombre_runa, lore_runa,
     icono_personaje, nombre_personaje, lore_personaje,
 )
+
+# ── Textos de habilidad por clase ────────────────────────────────────────────
+HABILIDAD_CLASE = {
+    'guerrero': 'Al estar en aprietos el guerrero potencia su ataque entrando en estado Berserker.',
+    'mago':     'Al recibir daño una vez por combate lanzara CounterSpell y dañara a su enemigo.',
+    'asesino':  'Antes de golpear cada turno lanzara un dado e intentara realizar un golpe extra.',
+}
 
 
 # ── Image que se comporta como botón (click en el icono = seleccionar item) ─
@@ -32,9 +40,6 @@ class IconoClicable(ButtonBehavior, Image):
 
 # ── Botón con marco decorativo PNG (reutilizado de forja_screen) ───────────
 class BotonConMarco(FloatLayout):
-    """
-    Botón con un PNG de marco decorativo de fondo y texto encima.
-    """
     def __init__(self, texto='VOLVER', marco_path=MARCO_BOTON,
                  on_press_callback=None, **kwargs):
         super().__init__(**kwargs)
@@ -66,19 +71,11 @@ class BotonConMarco(FloatLayout):
 
 # ── Pestaña de categoría con PNG de fondo ──────────────────────────────────
 class PestañaCategoria(FloatLayout):
-    """
-    Pestaña visual con varias capas:
-      0. Fondo oscuro permanente (siempre visible).
-      1. PNG decorativo siempre a opacidad 1 (no se atenúan las inactivas).
-      2. Borde dorado SOLO en la pestaña activa.
-      3. Botón transparente que captura el click.
-    """
     def __init__(self, marco_path, categoria, on_press_callback, **kwargs):
         super().__init__(**kwargs)
         self.categoria = categoria
         self._activa = False
 
-        # Capa 0: fondo oscuro siempre presente
         with self.canvas.before:
             Color(0, 0, 0, 0.55)
             self._fondoRect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(8)])
@@ -87,7 +84,6 @@ class PestañaCategoria(FloatLayout):
             size=lambda *a: setattr(self._fondoRect, 'size', self.size)
         )
 
-        # Capa 1: PNG decorativo
         self.imagenMarco = Image(
             source=marco_path,
             allow_stretch=True,
@@ -98,7 +94,6 @@ class PestañaCategoria(FloatLayout):
         )
         self.add_widget(self.imagenMarco)
 
-        # Capa 2: borde dorado (solo en pestaña activa)
         with self.canvas.after:
             Color(*COLOR_GUARDIANES)
             self._bordeLine = Line(
@@ -107,7 +102,6 @@ class PestañaCategoria(FloatLayout):
             )
         self.bind(pos=self._actualizarBorde, size=self._actualizarBorde)
 
-        # Capa 3: botón transparente
         self.boton = Button(
             background_normal='',
             background_color=(0, 0, 0, 0),
@@ -138,13 +132,11 @@ class PantallaInventario(Screen):
         self.categoriaActual = 'personajes'
         self.itemSeleccionado = None
 
-        # ── Fondo de pantalla ─────────────────────────────────────────────
         with self.canvas.before:
             Color(1, 1, 1, 1)
             self._bg_rect = Rectangle(source=FONDO_HOME, pos=self.pos, size=self.size)
         self.bind(pos=self._actualizarFondo, size=self._actualizarFondo)
 
-        # Velo oscuro
         with self.canvas.before:
             Color(0, 0, 0, 0.45)
             self._overlay = Rectangle(pos=self.pos, size=self.size)
@@ -155,9 +147,6 @@ class PantallaInventario(Screen):
 
         raiz = BoxLayout(orientation='vertical', spacing=0)
 
-        # ══════════════════════════════════════════════════════════════════
-        # CABECERA (15%) — Imagen "INVENTARIO" (ocupa todo el ancho)
-        # ══════════════════════════════════════════════════════════════════
         cabecera = Image(
             source=CABECERA_INVENTARIO,
             allow_stretch=True,
@@ -166,9 +155,6 @@ class PantallaInventario(Screen):
             size_hint=(1, 0.15)
         )
 
-        # ══════════════════════════════════════════════════════════════════
-        # PESTAÑAS (10%) — Personajes / Armas / Runas / Objetos
-        # ══════════════════════════════════════════════════════════════════
         filaPestañas = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.10),
@@ -187,9 +173,6 @@ class PantallaInventario(Screen):
             filaPestañas.add_widget(pestaña)
             self.pestañas[nombre] = pestaña
 
-        # ══════════════════════════════════════════════════════════════════
-        # SCROLL DE ITEMS DISPONIBLES (15%) — scroll horizontal
-        # ══════════════════════════════════════════════════════════════════
         contenedorScroll = BoxLayout(
             orientation='vertical',
             size_hint=(1, 0.15),
@@ -219,9 +202,6 @@ class PantallaInventario(Screen):
         scrollItems.add_widget(self.filaItems)
         contenedorScroll.add_widget(scrollItems)
 
-        # ══════════════════════════════════════════════════════════════════
-        # ZONA DETALLE (30%) — Preview + (Stats + Equipar)
-        # ══════════════════════════════════════════════════════════════════
         zonaDetalle = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.30),
@@ -229,7 +209,6 @@ class PantallaInventario(Screen):
             spacing=dp(8)
         )
 
-        # Columna izquierda: previsualización
         self.previewBox = BoxLayout(
             orientation='vertical',
             size_hint=(0.45, 1),
@@ -255,7 +234,6 @@ class PantallaInventario(Screen):
         )
         self.previewBox.add_widget(self.imagenPreview)
 
-        # Columna derecha: stats arriba + botón EQUIPAR abajo
         columnaStats = BoxLayout(
             orientation='vertical',
             size_hint=(0.55, 1),
@@ -300,9 +278,6 @@ class PantallaInventario(Screen):
         zonaDetalle.add_widget(self.previewBox)
         zonaDetalle.add_widget(columnaStats)
 
-        # ══════════════════════════════════════════════════════════════════
-        # PANEL EXPLICATIVO (18%) — Descripción / lore del item
-        # ══════════════════════════════════════════════════════════════════
         panelExplicativo = BoxLayout(
             orientation='vertical',
             size_hint=(1, 0.18),
@@ -331,9 +306,6 @@ class PantallaInventario(Screen):
         self.lblDescripcion.bind(size=self.lblDescripcion.setter('text_size'))
         panelExplicativo.add_widget(self.lblDescripcion)
 
-        # ══════════════════════════════════════════════════════════════════
-        # BOTONERA INFERIOR (12%) — [VOLVER] [FORJA]
-        # ══════════════════════════════════════════════════════════════════
         botonera = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.12),
@@ -363,7 +335,6 @@ class PantallaInventario(Screen):
         botonera.add_widget(botonVolver)
         botonera.add_widget(botonForja)
 
-        # Reparto: 15+10+15+30+18+12 = 100% ✓
         raiz.add_widget(cabecera)
         raiz.add_widget(filaPestañas)
         raiz.add_widget(contenedorScroll)
@@ -447,7 +418,6 @@ class PantallaInventario(Screen):
         return []
 
     def _obtenerObjetosVirtuales(self):
-        """Construye lista virtual de objetos a partir de los recursos del jugador."""
         recursos = self.gm.get_recursos() or {}
         objetos = []
         if recursos.get('pociones', 0) > 0:
@@ -496,8 +466,6 @@ class PantallaInventario(Screen):
             })
         return objetos
 
-    # ── Tarjeta de item: icono encima + nombre/botón debajo ──────────────
-
     def _crearTarjeta(self, item: dict, categoria: str):
         contenedor = BoxLayout(
             orientation='vertical',
@@ -506,7 +474,6 @@ class PantallaInventario(Screen):
             padding=[dp(4), dp(4)]
         )
 
-        # Usa el nombre bonito si existe, si no el interno de BD
         nombre_display = item.get('nombre_display') or item.get('nombre', '?')
         if categoria == 'objetos':
             etiqueta = f"{nombre_display} x{item.get('cantidad', 0)}"
@@ -552,12 +519,9 @@ class PantallaInventario(Screen):
 
         return contenedor
 
-    # ── Selección de un item del scroll ──────────────────────────────────
-
     def seleccionarItem(self, item: dict):
         self.itemSeleccionado = item
 
-        # Preview: personajes usan get_sprite_path igual que antes
         if self.categoriaActual == 'personajes':
             from database.repositories.personaje_repo import get_sprite_path
             ruta_imagen = get_sprite_path(
@@ -575,18 +539,18 @@ class PantallaInventario(Screen):
 
         self.lblStats.text = self._formatearStats(item)
 
-        # Muestra el lore inyectado en _obtenerItems; si está vacío, fallback genérico
         descripcion = item.get('descripcion')
         if not descripcion:
             descripcion = self._descripcionGenerica(item)
         self.lblDescripcion.text = descripcion
 
     def _formatearStats(self, item: dict) -> str:
-        # Encabezado con nombre bonito si existe
         nombre_display = item.get('nombre_display') or item.get('nombre', '?')
 
         if self.categoriaActual == 'personajes':
-            return (
+            clase = item.get('clase', '').lower()
+            habilidad = HABILIDAD_CLASE.get(clase, '')
+            texto = (
                 f"{nombre_display}\n"
                 f"Clase: {item.get('clase', '?').capitalize()}\n"
                 f"Rareza: {item.get('rareza', '?')}\n\n"
@@ -596,6 +560,10 @@ class PantallaInventario(Screen):
                 f"DES: {item.get('destreza_base', 0)}\n"
                 f"PV:  {item.get('pv_base', 0)}"
             )
+            if habilidad:
+                texto += f"\n\n{habilidad}"
+            return texto
+
         elif self.categoriaActual == 'armas':
             return (
                 f"{nombre_display}\n"
@@ -631,8 +599,6 @@ class PantallaInventario(Screen):
             return f"Runa de rareza {item.get('rareza', '?')}. Aplica sus efectos al equiparla."
         return ''
 
-    # ── Botón EQUIPAR (lógica contextual) ────────────────────────────────
-
     def confirmarSeleccion(self, instance):
         if self.gm is None or self.itemSeleccionado is None:
             self._mostrarPopup('Sin selección', 'Elige un item antes de equipar.', (0.7, 0.3, 0.1, 1))
@@ -664,8 +630,9 @@ class PantallaInventario(Screen):
         self._cargarItems(self.categoriaActual)
 
     def _popupSlotRuna(self, inv_id: int):
-        """Pregunta al jugador en qué slot equipar la runa."""
-        modal = ModalView(size_hint=(0.7, 0.35), background_color=(0, 0, 0, 0))
+        """Pregunta al jugador en qué slot equipar la runa.
+        Cada opción muestra la imagen SLOT_RUNA_VACIO con el texto encima."""
+        modal = ModalView(size_hint=(0.7, 0.42), background_color=(0, 0, 0, 0))
 
         cont = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
         with cont.canvas.before:
@@ -679,23 +646,45 @@ class PantallaInventario(Screen):
         lbl = Label(
             text='¿En qué slot quieres equipar la runa?',
             font_size=dp(14), bold=True, color=BLANCO,
-            size_hint=(1, 0.4), halign='center', valign='middle'
+            size_hint=(1, None), height=dp(30),
+            halign='center', valign='middle'
         )
         lbl.bind(size=lbl.setter('text_size'))
         cont.add_widget(lbl)
 
-        botones = BoxLayout(orientation='horizontal', size_hint=(1, 0.6), spacing=dp(12))
+        botones = BoxLayout(orientation='horizontal', size_hint=(1, 1), spacing=dp(16))
 
-        btn1 = Button(
-            text='SLOT 1', background_normal='',
-            background_color=(0.4, 0.2, 0.5, 1), color=BLANCO,
-            font_size=dp(13), bold=True
-        )
-        btn2 = Button(
-            text='SLOT 2', background_normal='',
-            background_color=(0.4, 0.2, 0.5, 1), color=BLANCO,
-            font_size=dp(13), bold=True
-        )
+        def _hacer_slot_btn(texto_slot):
+            fl = FloatLayout(size_hint=(1, 1))
+            img = Image(
+                source=SLOT_RUNA_VACIO,
+                allow_stretch=True,
+                keep_ratio=True,
+                mipmap=True,
+                size_hint=(1, 1),
+                pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            )
+            lbl_slot = Label(
+                text=texto_slot,
+                font_size=dp(13), bold=True, color=BLANCO,
+                size_hint=(1, 1),
+                pos_hint={'center_x': 0.5, 'center_y': 0.5},
+                halign='center', valign='middle',
+            )
+            lbl_slot.bind(size=lbl_slot.setter('text_size'))
+            btn = Button(
+                background_normal='',
+                background_color=(0, 0, 0, 0),
+                size_hint=(1, 1),
+                pos_hint={'center_x': 0.5, 'center_y': 0.5},
+            )
+            fl.add_widget(img)
+            fl.add_widget(lbl_slot)
+            fl.add_widget(btn)
+            return fl, btn
+
+        fl1, btn1 = _hacer_slot_btn('SLOT 1')
+        fl2, btn2 = _hacer_slot_btn('SLOT 2')
 
         def _equipar(slot):
             res = self.gm.equipar_runa(inv_id, slot)
@@ -707,8 +696,8 @@ class PantallaInventario(Screen):
         btn1.bind(on_press=lambda _: _equipar(1))
         btn2.bind(on_press=lambda _: _equipar(2))
 
-        botones.add_widget(btn1)
-        botones.add_widget(btn2)
+        botones.add_widget(fl1)
+        botones.add_widget(fl2)
         cont.add_widget(botones)
         modal.add_widget(cont)
         modal.open()
@@ -739,8 +728,6 @@ class PantallaInventario(Screen):
                                (0.7, 0.5, 0.1, 1))
         else:
             self._mostrarPopup('Objeto', 'Este objeto no tiene uso directo.', (0.7, 0.3, 0.1, 1))
-
-    # ── Popup auxiliar ───────────────────────────────────────────────────
 
     def _mostrarPopup(self, titulo, mensaje, color_titulo):
         modal = ModalView(size_hint=(0.8, 0.4), auto_dismiss=True, background_color=(0, 0, 0, 0))
@@ -779,8 +766,6 @@ class PantallaInventario(Screen):
         cont.add_widget(btn)
         modal.add_widget(cont)
         modal.open()
-
-    # ── Navegación / helpers ─────────────────────────────────────────────
 
     def _actualizarFondo(self, *args):
         self._bg_rect.pos  = self.pos

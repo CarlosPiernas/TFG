@@ -52,34 +52,19 @@ class FilaProducto(BoxLayout):
             size=lambda *a: setattr(self._rect_bg, 'size', self.size)
         )
 
-        # Left spacer to center content
         self.add_widget(Widget(size_hint=(1, 1)))
-
         self.add_widget(Image(
             source=producto['icono'],
-            size_hint=(None, 1),
-            width=dp(32),
-            allow_stretch=True,
-            keep_ratio=True,
-            mipmap=True
+            size_hint=(None, 1), width=dp(32),
+            allow_stretch=True, keep_ratio=True, mipmap=True
         ))
-
         lbl_nombre = Label(
-            text=producto['nombre'],
-            font_size=sf(12),
-            bold=True,
-            color=BLANCO,
-            size_hint=(None, 1),
-            width=dp(160),
-            halign='left',
-            valign='middle'
+            text=producto['nombre'], font_size=sf(12), bold=True, color=BLANCO,
+            size_hint=(None, 1), width=dp(160), halign='left', valign='middle'
         )
         lbl_nombre.bind(size=lbl_nombre.setter('text_size'))
         self.add_widget(lbl_nombre)
-
-        # Right spacer to center content
         self.add_widget(Widget(size_hint=(1, 1)))
-
         self.bind(on_touch_down=self._on_toque)
 
     def _on_toque(self, instance, touch):
@@ -89,7 +74,7 @@ class FilaProducto(BoxLayout):
 
     def seleccionar(self):
         self._seleccionado  = True
-        self._color_bg.rgba = (1, 0.75, 0, 0.35)   # gold highlight
+        self._color_bg.rgba = (1, 0.75, 0, 0.35)
 
     def deseleccionar(self):
         self._seleccionado  = False
@@ -104,59 +89,39 @@ class PantallaTienda(Screen):
 
         raiz = FloatLayout()
 
-        # ── FONDO ─────────────────────────────────────────────────────────────
         raiz.add_widget(Image(
-            source=FONDO_TIENDA,
-            allow_stretch=True,
-            keep_ratio=False,
-            size_hint=(1, 1),
-            pos_hint={'x': 0, 'y': 0},
-            mipmap=True
+            source=FONDO_TIENDA, allow_stretch=True, keep_ratio=False,
+            size_hint=(1, 1), pos_hint={'x': 0, 'y': 0}, mipmap=True
         ))
 
-        # ── CONTENIDO SOBRE EL FONDO (BoxLayout vertical) ─────────────────────
         contenido = BoxLayout(
-            orientation='vertical',
-            size_hint=(1, 1),
-            padding=[0, dp(6)],
-            spacing=dp(4)
+            orientation='vertical', size_hint=(1, 1),
+            padding=[0, dp(6)], spacing=dp(4)
         )
         raiz.add_widget(contenido)
 
-        # ── TÍTULO (10%) ──────────────────────────────────────────────────────
         contenido.add_widget(Image(
-            source=TITULO_TIENDA,
-            size_hint=(0.7, 0.10),
-            pos_hint={'center_x': 0.5},
-            allow_stretch=True,
-            keep_ratio=True,
-            mipmap=True
+            source=TITULO_TIENDA, size_hint=(0.7, 0.10),
+            pos_hint={'center_x': 0.5}, allow_stretch=True, keep_ratio=True, mipmap=True
         ))
 
-        # ── FILAS DE PRODUCTOS (54% total — 9% cada una × 6) ─────────────────
         todos = PRODUCTOS_MONEDAS + PRODUCTOS_FRAGMENTOS
         self._filas = []
         for p in todos:
             fila = FilaProducto(p, self._seleccionar_producto)
-            # Override size_hint to fill width and take equal vertical share
             fila.size_hint = (1, None)
             fila.height    = sh(52)
             self._filas.append(fila)
             contenido.add_widget(fila)
 
-        # ── RECURSOS (6%) ─────────────────────────────────────────────────────
         filaRecursos = BoxLayout(
-            orientation='horizontal',
-            size_hint=(1, 0.06),
-            spacing=dp(8),
-            padding=[dp(12), dp(2)]
+            orientation='horizontal', size_hint=(1, 0.06),
+            spacing=dp(8), padding=[dp(12), dp(2)]
         )
         with filaRecursos.canvas.before:
             Color(0, 0, 0, 0.55)
             self._bgRecursos = RoundedRectangle(
-                pos=filaRecursos.pos,
-                size=filaRecursos.size,
-                radius=[dp(6)]
+                pos=filaRecursos.pos, size=filaRecursos.size, radius=[dp(6)]
             )
         filaRecursos.bind(
             pos=lambda *a: setattr(self._bgRecursos, 'pos', filaRecursos.pos),
@@ -179,47 +144,29 @@ class PantallaTienda(Screen):
         filaRecursos.add_widget(_recurso_widget(FRAGMENTO_AZUL, 'lblFragAzules'))
         contenido.add_widget(filaRecursos)
 
-        # ── BOTÓN COMPRAR (12%) ───────────────────────────────────────────────
         panelComprar = BoxLayout(
-            orientation='horizontal',
-            size_hint=(1, 0.12),
-            spacing=dp(8),
-            padding=[dp(12), dp(4)]
+            orientation='horizontal', size_hint=(1, 0.12),
+            spacing=dp(8), padding=[dp(12), dp(4)]
         )
-
         self.btnComprar = Button(
-            background_normal=BOTON_COMPRAR,
-            background_down=BOTON_COMPRAR,
-            background_color=(1, 1, 1, 0.5),
-            border=(0, 0, 0, 0),
-            size_hint=(1, 1),
-            mipmap=True
+            background_normal=BOTON_COMPRAR, background_down=BOTON_COMPRAR,
+            background_color=(1, 1, 1, 0.5), border=(0, 0, 0, 0),
+            size_hint=(1, 1), mipmap=True
         )
         self.btnComprar.bind(on_press=self._confirmar_compra)
 
         self.filaPrecioSeleccionado = BoxLayout(
-            orientation='horizontal',
-            size_hint=(None, 1),
-            width=dp(80),
-            spacing=dp(4)
+            orientation='horizontal', size_hint=(None, 1),
+            width=dp(80), spacing=dp(4)
         )
         self.lblPrecioSeleccionado = Label(
-            text='',
-            font_size=sf(13),
-            bold=True,
-            color=COLOR_GUARDIANES,
-            size_hint=(1, 1),
-            halign='right',
-            valign='middle'
+            text='', font_size=sf(13), bold=True, color=COLOR_GUARDIANES,
+            size_hint=(1, 1), halign='right', valign='middle'
         )
         self.lblPrecioSeleccionado.bind(size=self.lblPrecioSeleccionado.setter('text_size'))
         self.iconoDivisaSeleccionada = Image(
-            source=ICONO_MONEDA,
-            size_hint=(None, 1),
-            width=dp(22),
-            allow_stretch=True,
-            keep_ratio=True,
-            mipmap=True
+            source=ICONO_MONEDA, size_hint=(None, 1), width=dp(22),
+            allow_stretch=True, keep_ratio=True, mipmap=True
         )
         self.filaPrecioSeleccionado.add_widget(self.lblPrecioSeleccionado)
         self.filaPrecioSeleccionado.add_widget(self.iconoDivisaSeleccionada)
@@ -227,25 +174,14 @@ class PantallaTienda(Screen):
         panelComprar.add_widget(self.filaPrecioSeleccionado)
         contenido.add_widget(panelComprar)
 
-        # ── NAVEGACIÓN (10%) ──────────────────────────────────────────────────
         barraNav = BoxLayout(
-            orientation='horizontal',
-            size_hint=(1, 0.10),
-            spacing=dp(10),
-            padding=[dp(12), dp(4)]
+            orientation='horizontal', size_hint=(1, 0.10),
+            spacing=dp(10), padding=[dp(12), dp(4)]
         )
-
         btnVolver = Button(
-            text='VOLVER',
-            background_normal=BOTON_VOLVER,
-            background_down=BOTON_VOLVER,
-            background_color=(1, 1, 1, 1),
-            color=BLANCO,
-            bold=True,
-            font_size=sf(13),
-            border=(0, 0, 0, 0),
-            size_hint=(1, 1),
-            mipmap=True
+            text='VOLVER', background_normal=BOTON_VOLVER, background_down=BOTON_VOLVER,
+            background_color=(1, 1, 1, 1), color=BLANCO, bold=True, font_size=sf(13),
+            border=(0, 0, 0, 0), size_hint=(1, 1), mipmap=True
         )
         btnVolver.bind(on_press=self._ir_al_gacha_o_home)
         barraNav.add_widget(btnVolver)
@@ -253,13 +189,9 @@ class PantallaTienda(Screen):
 
         self.add_widget(raiz)
 
-    # ── Ciclo de vida ─────────────────────────────────────────────────────────
-
     def on_pre_enter(self, *args):
         self._refrescar_recursos()
         self._deseleccionar_todo()
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _refrescar_recursos(self):
         if self.gm is None:
@@ -297,7 +229,7 @@ class PantallaTienda(Screen):
         self._fila_seleccionada = None
         self._desactivar_boton_comprar()
 
-    # ── Compra ────────────────────────────────────────────────────────────────
+    # ── Popups ────────────────────────────────────────────────────────────────
 
     def _confirmar_compra(self, instance):
         if self._fila_seleccionada is None:
@@ -305,11 +237,18 @@ class PantallaTienda(Screen):
             return
         producto = self._fila_seleccionada.producto
 
-        modal = ModalView(size_hint=(0.8, 0.3), auto_dismiss=True, background_color=(0, 0, 0, 0))
+        modal = ModalView(
+            size_hint=(0.8, 0.3), auto_dismiss=True,
+            background_color=(0, 0, 0, 0.7)
+        )
         contenedor = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
         with contenedor.canvas.before:
             Color(0.05, 0.05, 0.1, 0.97)
-            RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+            _r = RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+        contenedor.bind(
+            pos=lambda *a: setattr(_r, 'pos', contenedor.pos),
+            size=lambda *a: setattr(_r, 'size', contenedor.size),
+        )
 
         lbl = Label(
             text=f"¿Comprar {producto['nombre']} por {producto['precio']}?",
@@ -318,9 +257,16 @@ class PantallaTienda(Screen):
         )
         lbl.bind(size=lbl.setter('text_size'))
 
-        filaBtns = BoxLayout(orientation='horizontal', size_hint=(1, None), height=dp(44), spacing=dp(10))
-        btnSi = BotonRedondeado(text='COMPRAR', bg_color=COLOR_GUARDIANES, text_color=(0, 0, 0, 1), radius=8, size_hint=(1, 1), font_size=dp(13), bold=True)
-        btnNo = BotonRedondeado(text='CANCELAR', bg_color=(0.3, 0.1, 0.1, 1), text_color=BLANCO, radius=8, size_hint=(1, 1), font_size=dp(13))
+        filaBtns = BoxLayout(orientation='horizontal', size_hint=(1, None),
+                             height=dp(44), spacing=dp(10))
+        btnSi = BotonRedondeado(
+            text='COMPRAR', bg_color=COLOR_GUARDIANES, text_color=(0, 0, 0, 1),
+            radius=8, size_hint=(1, 1), font_size=dp(13), bold=True
+        )
+        btnNo = BotonRedondeado(
+            text='CANCELAR', bg_color=(0.3, 0.1, 0.1, 1), text_color=BLANCO,
+            radius=8, size_hint=(1, 1), font_size=dp(13)
+        )
         btnSi.bind(on_press=lambda _: self._ejecutar_compra(producto, modal))
         btnNo.bind(on_press=lambda _: modal.dismiss())
         filaBtns.add_widget(btnSi)
@@ -354,15 +300,29 @@ class PantallaTienda(Screen):
         self._deseleccionar_todo()
 
     def _mostrar_resultado(self, resultado):
-        modal = ModalView(size_hint=(0.75, 0.25), auto_dismiss=True, background_color=(0, 0, 0, 0))
+        modal = ModalView(
+            size_hint=(0.75, 0.25), auto_dismiss=True,
+            background_color=(0, 0, 0, 0.7)
+        )
         contenedor = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(10))
         with contenedor.canvas.before:
             Color(0.05, 0.05, 0.1, 0.97)
-            RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+            _r = RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+        contenedor.bind(
+            pos=lambda *a: setattr(_r, 'pos', contenedor.pos),
+            size=lambda *a: setattr(_r, 'size', contenedor.size),
+        )
         color = (0.2, 0.8, 0.3, 1) if resultado['ok'] else (0.8, 0.2, 0.2, 1)
-        lbl = Label(text=resultado['mensaje'], font_size=dp(13), color=color, size_hint=(1, 1), halign='center', valign='middle')
+        lbl = Label(
+            text=resultado['mensaje'], font_size=dp(13), color=color,
+            size_hint=(1, 1), halign='center', valign='middle'
+        )
         lbl.bind(size=lbl.setter('text_size'))
-        btn = BotonRedondeado(text='OK', bg_color=COLOR_GUARDIANES, text_color=(0, 0, 0, 1), radius=8, size_hint=(0.5, None), height=dp(40), pos_hint={'center_x': 0.5}, font_size=dp(13), bold=True)
+        btn = BotonRedondeado(
+            text='OK', bg_color=COLOR_GUARDIANES, text_color=(0, 0, 0, 1),
+            radius=8, size_hint=(0.5, None), height=dp(40),
+            pos_hint={'center_x': 0.5}, font_size=dp(13), bold=True
+        )
         btn.bind(on_press=lambda _: modal.dismiss())
         contenedor.add_widget(lbl)
         contenedor.add_widget(btn)
@@ -370,10 +330,6 @@ class PantallaTienda(Screen):
         modal.open()
 
     # ── Navegación ────────────────────────────────────────────────────────────
-
-    def _navegar(self, pantalla):
-        self.manager.transition = SlideTransition(direction='left')
-        self.manager.current = pantalla
 
     def _ir_al_gacha_o_home(self, instance):
         self.manager.transition = SlideTransition(direction='left')

@@ -3,72 +3,72 @@
         "nodo_1": {
             "nombre": "Anomalía Alfa",
             "tipo": "basico",
-            "atk": 80,
-            "defensa": 90,
-            "vida": 300
+            "atk": 75,
+            "defensa": 80,
+            "vida": 280
         },
         "nodo_2": {
             "nombre": "Sombra Errante",
             "tipo": "basico",
-            "atk": 105,
-            "defensa": 115,
-            "vida": 400
+            "atk": 100,
+            "defensa": 110,
+            "vida": 380
         },
         "nodo_3": {
             "nombre": "Distorsión Menor",
             "tipo": "basico",
-            "atk": 115,
-            "defensa": 130,
-            "vida": 500
+            "atk": 112,
+            "defensa": 118,
+            "vida": 480
         },
         "nodo_4": {
             "nombre": "Eco del Vacío",
             "tipo": "basico",
-            "atk": 125,
-            "defensa": 132,
-            "vida": 600
+            "atk": 122,
+            "defensa": 128,
+            "vida": 580
         },
         "nodo_5": {
             "nombre": "KRONOS",
             "tipo": "jefe",
-            "atk": 100,
-            "defensa": 120,
-            "vida": 900
+            "atk": 138,
+            "defensa": 125,
+            "vida": 880
         },
         "nodo_6": {
             "nombre": "Anomalía Beta",
             "tipo": "basico",
-            "atk": 160,
-            "defensa": 175,
-            "vida": 950
+            "atk": 158,
+            "defensa": 168,
+            "vida": 980
         },
         "nodo_7": {
             "nombre": "Sombra Profunda",
             "tipo": "basico",
-            "atk": 179,
-            "defensa": 195,
-            "vida": 1100
+            "atk": 175,
+            "defensa": 188,
+            "vida": 1150
         },
         "nodo_8": {
             "nombre": "Distorsión Mayor",
             "tipo": "basico",
-            "atk": 198,
-            "defensa": 221,
-            "vida": 1300
+            "atk": 210,
+            "defensa": 230,
+            "vida": 1350
         },
         "nodo_9": {
             "nombre": "Vacío Absoluto",
             "tipo": "basico",
-            "atk": 218,
-            "defensa": 268,
-            "vida": 1500
+            "atk": 235,
+            "defensa": 270,
+            "vida": 1550
         },
         "nodo_10": {
             "nombre": "KRONOS DEFINITIVO",
             "tipo": "jefe",
-            "atk": 280,
-            "defensa": 265,
-            "vida": 1800
+            "atk": 295,
+            "defensa": 275,
+            "vida": 1950
         }
     }
 }
