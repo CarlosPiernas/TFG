@@ -5,9 +5,11 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.button import Button
+from kivy.uix.modalview import ModalView
 from kivy.graphics import Color, Rectangle, RoundedRectangle, Line
 from kivy.metrics import dp
 from widgets.responsive import sw, sh, sf, sdp
+import os, sys
 from config import (
     PANEL_MEDIO, COLOR_ANOMALIAS, COLOR_GUARDIANES, BLANCO,
     COLOR_VIDA, COLOR_VIDA_MEDIA, COLOR_VIDA_BAJA, COLOR_STATS,
@@ -24,17 +26,11 @@ from config import (
     icono_runa,
 )
 
-
-# ── Tamaño de la barra de vida (proporción del contenedor) ──────────────────
-# 1.0 = ocupa todo. Valores menores = barra más pequeña, centrada.
-# Si quieres la barra más fina, baja BARRA_VIDA_ALTO_PCT.
-# Si quieres la barra más corta, baja BARRA_VIDA_ANCHO_PCT.
-BARRA_VIDA_ANCHO_PCT = 0.85   # 85% del ancho del contenedor
-BARRA_VIDA_ALTO_PCT  = 0.55   # 55% del alto del contenedor
+BARRA_VIDA_ANCHO_PCT = 0.85
+BARRA_VIDA_ALTO_PCT  = 0.55
 
 
 def _stat_fila(icono_path, etiqueta_texto):
-    """Fila [icono | "ETIQUETA: —"] para el panel de stats."""
     fila = BoxLayout(
         orientation='horizontal',
         size_hint=(1, 1),
@@ -65,9 +61,6 @@ def _stat_fila(icono_path, etiqueta_texto):
 
 
 def _equipo_fila(icono_inicial, ancho_icono):
-    """Fila [icono | (nombre arriba, stats debajo)] para runas y arma.
-    El icono ocupa la celda con fit_mode='contain' para que el PNG mantenga
-    su proporción sin que Kivy rellene los huecos con blanco."""
     fila = BoxLayout(
         orientation='horizontal',
         size_hint=(1, 1),
@@ -122,8 +115,6 @@ class PantallaPrincipal(Screen):
         raiz = BoxLayout(orientation='vertical', spacing=0)
 
         # ── BARRA SUPERIOR (14%) ──────────────────────────────────────────────
-        # Subida de 10% a 14% para dar más altura al marco decorativo de la
-        # barra de vida. El extra se compensa reduciendo el splash del personaje.
         barraTop = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.14),
@@ -138,18 +129,17 @@ class PantallaPrincipal(Screen):
             size=lambda *a: setattr(self._headerRect, 'size', barraTop.size)
         )
 
-        self.logoFaccion = Image(
-            source=PLACEHOLDER,
-            fit_mode='contain',
+        # ── Logo facción — al pulsarlo abre el popup de opciones ─────────────
+        self.logoFaccion = Button(
+            background_normal=PLACEHOLDER,
+            background_down=PLACEHOLDER,
+            background_color=(1, 1, 1, 1),
+            border=(0, 0, 0, 0),
             size_hint=(None, 1),
-            width=dp(60)
+            width=dp(60),
         )
+        self.logoFaccion.bind(on_press=lambda _: self._abrirMenuOpciones())
 
-        # ── Barra de vida con marco decorativo superpuesto ───────────────────
-        # Capas (de fondo a frente):
-        #   1. canvas.before: fondo gris + relleno de color (ocupan todo)
-        #   2. self.marcoVida (Image): marco decorativo común
-        #   3. self.lblVida (Label): texto "X / Y" centrado
         contenedorVida = BoxLayout(
             orientation='vertical',
             size_hint=(1, 1),
@@ -157,7 +147,6 @@ class PantallaPrincipal(Screen):
         )
         self.barraVida = FloatLayout(size_hint=(1, 1))
 
-        # Capa 2 — marco decorativo (más grande que el contenedor para envolver la barra)
         self.marcoVida = Image(
             source=MARCO_VIDA,
             fit_mode='fill',
@@ -167,7 +156,6 @@ class PantallaPrincipal(Screen):
         )
         self.barraVida.add_widget(self.marcoVida)
 
-        # Capa 3 — texto de vida ("X / Y") centrado
         self.lblVida = Label(
             text='—',
             font_size=sf(12),
@@ -213,8 +201,6 @@ class PantallaPrincipal(Screen):
         barraTop.add_widget(filaMonedas)
 
         # ── SPLASH ART (38%) ──────────────────────────────────────────────────
-        # fit_mode='cover': la imagen mantiene proporción y rellena todo el área
-        # recortando lo que sobre por los bordes (estilo splash art de gacha).
         self.imagenPersonaje = Image(
             source=PLACEHOLDER,
             fit_mode='cover',
@@ -223,9 +209,6 @@ class PantallaPrincipal(Screen):
         )
 
         # ── PANEL CENTRAL UNIFICADO (30%) ─────────────────────────────────────
-        # Reemplaza al antiguo papiro + bloque runas. Un único panel con:
-        #   - Mitad izquierda (50%): 5 stats apiladas (icono + etiqueta)
-        #   - Mitad derecha (50%): runas (50%) + arma (50%)
         panelCentral = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.30),
@@ -244,7 +227,6 @@ class PantallaPrincipal(Screen):
             size=lambda *a: setattr(self._fondoRunaRect, 'size', panelCentral.size)
         )
 
-        # ── Mitad izquierda: estadísticas (5 filas) ──────────────────────────
         ladoStats = BoxLayout(
             orientation='vertical',
             size_hint=(0.5, 1),
@@ -264,9 +246,6 @@ class PantallaPrincipal(Screen):
         ladoStats.add_widget(filaDes)
         ladoStats.add_widget(filaPoc)
 
-        # ── Mitad derecha: equipo (runas arriba, arma abajo) ─────────────────
-        # Los iconos arrancan con el placeholder de "slot vacío" para que el
-        # panel se vea decorado incluso cuando no hay nada equipado todavía.
         ladoEquipo = BoxLayout(
             orientation='vertical',
             size_hint=(0.5, 1),
@@ -361,6 +340,94 @@ class PantallaPrincipal(Screen):
         self._pociones_actuales = 5
         self._porcentaje_vida = 1.0
 
+    # ── Popup de opciones (logo facción) ─────────────────────────────────────
+
+    def _abrirMenuOpciones(self):
+        modal = ModalView(
+            size_hint=(0.75, None),
+            height=dp(260),
+            auto_dismiss=True,
+            background_color=(0, 0, 0, 0.7),
+        )
+
+        cont = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
+        with cont.canvas.before:
+            Color(0.05, 0.05, 0.1, 0.97)
+            self._menuRect = RoundedRectangle(
+                pos=cont.pos, size=cont.size, radius=[dp(14)]
+            )
+        cont.bind(
+            pos=lambda *a: setattr(self._menuRect, 'pos', cont.pos),
+            size=lambda *a: setattr(self._menuRect, 'size', cont.size),
+        )
+
+        def _btn(texto, color_bg, callback):
+            b = Button(
+                text=texto,
+                background_normal='',
+                background_color=color_bg,
+                color=BLANCO,
+                font_size=dp(14),
+                bold=True,
+                size_hint=(1, None),
+                height=dp(44),
+            )
+            b.bind(on_press=lambda _: callback(modal))
+            return b
+
+        lbl_titulo = Label(
+            text='AJUSTES',
+            font_size=dp(18),
+            bold=True,
+            color=BLANCO,
+            size_hint=(1, None),
+            height=dp(30),
+            halign='center',
+            valign='middle',
+        )
+        lbl_titulo.bind(size=lbl_titulo.setter('text_size'))
+        cont.add_widget(lbl_titulo)
+
+        cont.add_widget(_btn(
+            'Salir del juego',
+            (0.6, 0.1, 0.1, 1),
+            lambda m: self._salirJuego(m),
+        ))
+        cont.add_widget(_btn(
+            'Juego Nuevo',
+            (0.2, 0.45, 0.6, 1),
+            lambda m: self._juegoNuevo(m),
+        ))
+        cont.add_widget(_btn(
+            'Volver',
+            (0.25, 0.25, 0.25, 1),
+            lambda m: m.dismiss(),
+        ))
+
+        modal.add_widget(cont)
+        modal.open()
+
+    def _salirJuego(self, modal):
+        modal.dismiss()
+        from kivy.app import App
+        App.get_running_app().stop()
+
+    def _juegoNuevo(self, modal):
+        modal.dismiss()
+        # Ruta al archivo de BD
+        ruta_bd = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            '..', 'data', 'game.db'
+        )
+        try:
+            if os.path.exists(ruta_bd):
+                os.remove(ruta_bd)
+        except Exception as e:
+            print(f"[home_screen] Error al borrar BD: {e}")
+        # Reiniciar la app para volver a la pantalla de selección de facción
+        from kivy.app import App
+        App.get_running_app().stop()
+
     # ── Canvas helpers ────────────────────────────────────────────────────────
 
     def _dibujarBarraVida(self, *args):
@@ -374,7 +441,6 @@ class PantallaPrincipal(Screen):
         else:
             color_barra = COLOR_VIDA_BAJA
 
-        # Calcular tamaño y posición de la barra (centrada en el contenedor)
         barra_w = w.width  * BARRA_VIDA_ANCHO_PCT
         barra_h = w.height * BARRA_VIDA_ALTO_PCT
         barra_x = w.x + (w.width  - barra_w) / 2
@@ -382,10 +448,8 @@ class PantallaPrincipal(Screen):
 
         w.canvas.before.clear()
         with w.canvas.before:
-            # Fondo oscuro
             Color(0.2, 0.2, 0.2, 0.8)
             RoundedRectangle(pos=(barra_x, barra_y), size=(barra_w, barra_h), radius=[dp(4)])
-            # Relleno proporcional al porcentaje
             Color(*color_barra)
             RoundedRectangle(pos=(barra_x, barra_y), size=(barra_w * pct, barra_h), radius=[dp(4)])
 
@@ -404,36 +468,33 @@ class PantallaPrincipal(Screen):
         faccion = self.gm.faccion or ''
         self._bg_rect.source = FONDO_HOME
         if faccion == 'anomalia':
-            self.logoFaccion.source    = LOGO_ANOMALIA
-            self._fondoRunaRect.source = FONDO_RUNA_ANOMALIA
+            self.logoFaccion.background_normal = LOGO_ANOMALIA
+            self.logoFaccion.background_down   = LOGO_ANOMALIA
+            self._fondoRunaRect.source         = FONDO_RUNA_ANOMALIA
         else:
-            self.logoFaccion.source    = LOGO_GUARDIAN
-            self._fondoRunaRect.source = FONDO_RUNA_GUARDIAN
-        self.logoFaccion.reload()
+            self.logoFaccion.background_normal = LOGO_GUARDIAN
+            self.logoFaccion.background_down   = LOGO_GUARDIAN
+            self._fondoRunaRect.source         = FONDO_RUNA_GUARDIAN
 
         from database.repositories.personaje_repo import get_sprite_path
         sprite = get_sprite_path(
             info.get('faccion', ''),
             info.get('clase', ''),
             info.get('rareza', ''),
-            'splash'  # home muestra el splash art
+            'splash'
         )
         self.imagenPersonaje.source = sprite
         self.imagenPersonaje.reload()
 
-        # Stats con etiqueta + valor
         self.lblAtk.text   = f"ATAQUE: {info.get('atk_base', '—')}"
         self.lblDef.text   = f"DEFENSA: {info.get('defensa_base', '—')}"
         self.lblMagia.text = f"MAGIA: {info.get('magia_base', '—')}"
         self.lblDes.text   = f"DESTREZA: {info.get('destreza_base', '—')}"
 
-        # Equipo
         from database.repositories import inventario_repo, arma_repo, runa_repo
         equipo     = info.get('equipo', [])
         inv_por_id = {item['id']: item for item in inventario_repo.get_inventario()}
 
-        # Reset: si después no se rellena ningún slot, queda el placeholder de
-        # "slot vacío" en lugar de un hueco en blanco.
         self.lblNombreArma.text  = '—'
         self.lblStatArma.text    = ''
         self.iconoArma.source    = SLOT_ARMA_VACIO
@@ -477,7 +538,6 @@ class PantallaPrincipal(Screen):
                     self.iconoRuna2.source   = icono_runa(datos.get('nombre', ''))
                     self.iconoRuna2.reload()
 
-        # Pociones (formato "POCIONES: X/5") y monedas
         recursos = self.gm.get_recursos()
         self._pociones_actuales = recursos.get('pociones', 5)
         self.lblPociones.text   = f"POCIONES: {self._pociones_actuales}/5"
@@ -485,7 +545,6 @@ class PantallaPrincipal(Screen):
         monedas = recursos.get('monedas', 0)
         self.etiquetaMonedas.text = str(monedas)
 
-        # Vida del jugador (barra dinámica)
         vida_actual = recursos.get('vida_actual', 0) or 0
         vida_max    = recursos.get('vida_max', 0)    or 0
         if vida_max <= 0:
@@ -501,12 +560,13 @@ class PantallaPrincipal(Screen):
         self.imagenPersonaje.reload()
         self._bg_rect.source = FONDO_HOME
         if nombreFaccion == NOMBRE_ANOMALIA:
-            self.logoFaccion.source    = LOGO_ANOMALIA
-            self._fondoRunaRect.source = FONDO_RUNA_ANOMALIA
+            self.logoFaccion.background_normal = LOGO_ANOMALIA
+            self.logoFaccion.background_down   = LOGO_ANOMALIA
+            self._fondoRunaRect.source         = FONDO_RUNA_ANOMALIA
         else:
-            self.logoFaccion.source    = LOGO_GUARDIAN
-            self._fondoRunaRect.source = FONDO_RUNA_GUARDIAN
-        self.logoFaccion.reload()
+            self.logoFaccion.background_normal = LOGO_GUARDIAN
+            self.logoFaccion.background_down   = LOGO_GUARDIAN
+            self._fondoRunaRect.source         = FONDO_RUNA_GUARDIAN
 
     def navegarA(self, pantalla):
         if pantalla == 'gacha':

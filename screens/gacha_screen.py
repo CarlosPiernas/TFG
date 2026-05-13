@@ -38,7 +38,6 @@ class PantallaGacha(Screen):
 
         raiz = FloatLayout()
 
-        # ── FONDO ─────────────────────────────────────────────────────────────
         self.fondo = Image(
             source=FONDO_GACHA_ANOMALIA,
             allow_stretch=True,
@@ -67,11 +66,10 @@ class PantallaGacha(Screen):
              if f.endswith('.png')],
             key=lambda x: int(x.split('_')[-1].replace('.png', ''))
         )
-        self._frame_actual      = 0
-        self._anim_event        = None
-        self._cache_texturas    = {}   # path -> CoreImage texture
+        self._frame_actual   = 0
+        self._anim_event     = None
+        self._cache_texturas = {}
 
-        # ── TÍTULO GACHAPÓN ───────────────────────────────────────────────────
         raiz.add_widget(Image(
             source=TITULO_GACHA,
             size_hint=(0.95, 0.18),
@@ -81,24 +79,19 @@ class PantallaGacha(Screen):
             mipmap=True
         ))
 
-        # ── FONDO OSCURO TABS + TICKETS ───────────────────────────────────────
         fondoTabs = BoxLayout(
             size_hint=(1, 0.16),
             pos_hint={'x': 0, 'top': 0.84}
         )
         with fondoTabs.canvas.before:
             Color(0, 0, 0, 0.55)
-            self._bgTabs = Rectangle(
-                pos=fondoTabs.pos,
-                size=fondoTabs.size
-            )
+            self._bgTabs = Rectangle(pos=fondoTabs.pos, size=fondoTabs.size)
         fondoTabs.bind(
             pos=lambda *a: setattr(self._bgTabs, 'pos', fondoTabs.pos),
             size=lambda *a: setattr(self._bgTabs, 'size', fondoTabs.size)
         )
         raiz.add_widget(fondoTabs)
 
-        # ── TABS BANNERS ──────────────────────────────────────────────────────
         tabs = BoxLayout(
             orientation='horizontal',
             size_hint=(0.9, 0.10),
@@ -130,7 +123,6 @@ class PantallaGacha(Screen):
         tabs.add_widget(self.btn_armas_tab)
         raiz.add_widget(tabs)
 
-        # ── FILA TICKETS — ancho completo con fondo oscuro ────────────────────
         filaTickets = BoxLayout(
             orientation='horizontal',
             size_hint=(0.9, 0.06),
@@ -139,7 +131,6 @@ class PantallaGacha(Screen):
             padding=[dp(10), dp(4)]
         )
 
-        # Lado personajes
         ladoPersonajes = BoxLayout(orientation='horizontal', size_hint=(0.5, 1), spacing=dp(4))
         self.iconoTicketPersonajes = Image(
             source=TICKET_PERSONAJES,
@@ -163,17 +154,12 @@ class PantallaGacha(Screen):
         ladoPersonajes.add_widget(self.iconoTicketPersonajes)
         ladoPersonajes.add_widget(self.lblTicketsPersonajes)
 
-        # Separador vertical
         separador = BoxLayout(size_hint=(None, 1), width=dp(1))
         with separador.canvas:
             Color(1, 1, 1, 0.3)
             Rectangle(pos=separador.pos, size=separador.size)
-        separador.bind(
-            pos=lambda *a: None,
-            size=lambda *a: None
-        )
+        separador.bind(pos=lambda *a: None, size=lambda *a: None)
 
-        # Lado armas
         ladoArmas = BoxLayout(orientation='horizontal', size_hint=(0.5, 1), spacing=dp(4),
                               padding=[dp(8), 0])
         self.iconoTicketArmas = Image(
@@ -203,7 +189,6 @@ class PantallaGacha(Screen):
         filaTickets.add_widget(ladoArmas)
         raiz.add_widget(filaTickets)
 
-        # ── PITY ──────────────────────────────────────────────────────────────
         self.lblPity = Label(
             text='Próximo [b]S[/b] en: [color=#ffbf00]—[/color]',
             markup=True,
@@ -217,7 +202,6 @@ class PantallaGacha(Screen):
         self.lblPity.bind(size=self.lblPity.setter('text_size'))
         raiz.add_widget(self.lblPity)
 
-        # ── BOTÓN INVOCAR/FORJAR ──────────────────────────────────────────────
         self.btnAccion = Button(
             background_normal=BOTON_INVOCAR,
             background_down=BOTON_INVOCAR,
@@ -230,7 +214,6 @@ class PantallaGacha(Screen):
         self.btnAccion.bind(on_press=self.ejecutar_tirada)
         raiz.add_widget(self.btnAccion)
 
-        # ── FILA TIENDA + VOLVER ──────────────────────────────────────────────
         filaBotones = BoxLayout(
             orientation='horizontal',
             size_hint=(0.85, 0.11),
@@ -281,13 +264,10 @@ class PantallaGacha(Screen):
             frames = self._frames_personajes
         else:
             frames = self._frames_guardianes
-
         if not frames:
             return
         self._frame_actual = (self._frame_actual + 1) % len(frames)
         self.fondo.source = frames[self._frame_actual]
-
-    # ── Ciclo de vida ─────────────────────────────────────────────────────────
 
     def on_pre_enter(self, *args):
         self._refrescar_fondo()
@@ -299,7 +279,6 @@ class PantallaGacha(Screen):
     def _precargar_frames(self):
         import threading
         from kivy.core.image import Image as CoreImage
-
         def cargar():
             for lista in [self._frames_armas, self._frames_personajes, self._frames_guardianes]:
                 for path in lista:
@@ -307,15 +286,12 @@ class PantallaGacha(Screen):
                         CoreImage(path, mipmap=True)
                     except Exception:
                         pass
-
         threading.Thread(target=cargar, daemon=True).start()
 
     def on_leave(self, *args):
         if self._anim_event:
             self._anim_event.cancel()
             self._anim_event = None
-
-    # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _refrescar_fondo(self):
         if self.gm is None:
@@ -344,11 +320,7 @@ class PantallaGacha(Screen):
         contador  = resultado['pity_count'] if resultado else 0
         limite    = 5 if GACHA_MODE == 'simple' else 90
         faltan    = max(0, limite - contador)
-        self.lblPity.text = (
-            f'Próximo [b]S[/b] en: [color=#ffbf00]{faltan}[/color]'
-        )
-
-    # ── Banners ───────────────────────────────────────────────────────────────
+        self.lblPity.text = f'Próximo [b]S[/b] en: [color=#ffbf00]{faltan}[/color]'
 
     def cambiar_banner(self, tipo):
         self.banner_actual = tipo
@@ -366,8 +338,6 @@ class PantallaGacha(Screen):
         self._refrescar_recursos()
         self._refrescar_pity()
 
-    # ── Navegación ────────────────────────────────────────────────────────────
-
     def navegarA(self, pantalla):
         self.manager.transition = SlideTransition(direction='left')
         self.manager.current = pantalla
@@ -376,24 +346,26 @@ class PantallaGacha(Screen):
         self.manager.transition = SlideTransition(direction='left')
         self.manager.current = 'principal'
 
-    # ── Tirada ────────────────────────────────────────────────────────────────
-
     def ejecutar_tirada(self, instance):
         if self.gm is None:
             return
         resultado = self.gm.tirar_gacha(self.banner_actual)
+
+        # ── CAMBIO: Ups! + mensaje legible para tickets insuficientes ─────────
         if 'error' in resultado:
-            self._mostrar_popup('Error', resultado['error'], (0.7, 0.1, 0.1, 1))
+            codigo = resultado['error']
+            if codigo == 'tickets_insuficientes':
+                msg = 'No te quedan mas tickets'
+            else:
+                msg = codigo
+            self._mostrar_popup('Ups!', msg, (0.7, 0.1, 0.1, 1))
             return
 
-        # El nombre viene anidado en resultado["item"]["nombre"], no en el nivel superior.
         item      = resultado.get('item') or {}
         nombre_db = item.get('nombre', '?')
         rareza    = resultado.get('rareza') or item.get('rareza', 'B')
         es_frag   = resultado.get('fragmento') is not None
 
-        # Resuelve icono y nombre legible según el banner.
-        # Tanto si es nuevo como si es fragmento, mostramos el icono del item.
         if self.banner_actual == 'armas':
             icono_path     = icono_arma(nombre_db)
             nombre_display = nombre_arma(nombre_db)
@@ -426,16 +398,18 @@ class PantallaGacha(Screen):
         modal = ModalView(
             size_hint=(0.8, 0.6 if icono_path else 0.45),
             auto_dismiss=True,
-            background_color=(0, 0, 0, 0)
+            background_color=(0, 0, 0, 0.7),
         )
-        contenedor = BoxLayout(
-            orientation='vertical',
-            padding=dp(20),
-            spacing=dp(12)
-        )
+        contenedor = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
         with contenedor.canvas.before:
             Color(0.05, 0.05, 0.1, 0.97)
-            RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+            self._popRect = RoundedRectangle(
+                pos=contenedor.pos, size=contenedor.size, radius=[dp(16)]
+            )
+        contenedor.bind(
+            pos=lambda *a: setattr(self._popRect, 'pos', contenedor.pos),
+            size=lambda *a: setattr(self._popRect, 'size', contenedor.size),
+        )
 
         lbl_titulo = Label(
             text=titulo,
@@ -449,7 +423,6 @@ class PantallaGacha(Screen):
         )
         lbl_titulo.bind(size=lbl_titulo.setter('text_size'))
 
-        # Icono opcional (personajes o armas, tanto en nuevo como en fragmento)
         icono_widget = None
         if icono_path:
             icono_widget = Image(

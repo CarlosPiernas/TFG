@@ -21,31 +21,23 @@ from config import (
     FLECHA_TRANSMUTAR_GUARDIAN, FLECHA_TRANSMUTAR_ANOMALIA,
     CABECERA_FORJA,
     PLACEHOLDER,
-    icono_runa,
+    icono_runa, nombre_runa,
 )
 from widgets.componentes import BotonRedondeado
 
 
-# ── Image que se comporta como botón (click en el icono = asignar runa) ────
+# ── Image que se comporta como botón ───────────────────────────────────────
 class IconoClicable(ButtonBehavior, Image):
     pass
 
 
-# ── Slot de runa visual (fondo PNG + icono de la runa superpuesto) ─────────
+# ── Slot de runa visual ────────────────────────────────────────────────────
 class SlotRunaVisual(FloatLayout):
-    """
-    Slot decorativo redondo. Capas:
-      1. Image con el PNG del altar (fondo)
-      2. Image con el icono de la runa asignada (encima, centrada)
-    Si no hay runa asignada, la capa 2 se oculta (opacity=0) para que no
-    se vea ningún recuadro blanco/placeholder en pantalla.
-    """
     def __init__(self, fondo_path, **kwargs):
         super().__init__(**kwargs)
-        self.runa = None  # dict de la runa asignada o None
+        self.runa = None
         self._fondo_path = fondo_path
 
-        # Capa 1: fondo del slot (siempre visible)
         self.imagenFondo = Image(
             source=fondo_path,
             allow_stretch=True,
@@ -56,8 +48,6 @@ class SlotRunaVisual(FloatLayout):
         )
         self.add_widget(self.imagenFondo)
 
-        # Capa 2: icono de la runa. Oculto al inicio (opacity=0).
-        # Ocupa solo el círculo central del altar, no todo el slot.
         self.imagenRuna = Image(
             source='',
             allow_stretch=True,
@@ -71,9 +61,6 @@ class SlotRunaVisual(FloatLayout):
 
     def asignar(self, runa: dict):
         self.runa = runa
-        # Resolvemos el icono via config.icono_runa() a partir del nombre
-        # interno de BD (RUNA_ATAQUE, RUNA_ACERO, etc.). Si no hay match,
-        # cae al PLACEHOLDER.
         self.imagenRuna.source = icono_runa(runa.get('nombre', ''))
         self.imagenRuna.reload()
         self.imagenRuna.opacity = 1
@@ -84,26 +71,18 @@ class SlotRunaVisual(FloatLayout):
         self.imagenRuna.opacity = 0
 
     def cambiar_fondo(self, fondo_path):
-        # Permite cambiar el PNG del altar (al cambiar de facción).
         self._fondo_path = fondo_path
         self.imagenFondo.source = fondo_path
         self.imagenFondo.reload()
 
 
-# ── Botón con marco decorativo (PNG de fondo + texto encima) ───────────────
+# ── Botón con marco decorativo ─────────────────────────────────────────────
 class BotonConMarco(FloatLayout):
-    """
-    Botón con un PNG de marco decorativo de fondo y texto encima.
-    Capas:
-      1. Image con el marco (PNG)
-      2. Button transparente que recibe el click + Label con el texto
-    """
     def __init__(self, texto='VOLVER', marco_path=MARCO_BOTON,
                  on_press_callback=None, **kwargs):
         super().__init__(**kwargs)
         self._on_press_callback = on_press_callback
 
-        # Capa 1: marco decorativo
         self.imagenMarco = Image(
             source=marco_path,
             allow_stretch=True,
@@ -114,11 +93,10 @@ class BotonConMarco(FloatLayout):
         )
         self.add_widget(self.imagenMarco)
 
-        # Capa 2: botón transparente con el texto encima
         self.boton = Button(
             text=texto,
             background_normal='',
-            background_color=(0, 0, 0, 0),  # totalmente transparente
+            background_color=(0, 0, 0, 0),
             color=BLANCO,
             font_size=dp(15),
             bold=True,
@@ -135,7 +113,6 @@ class PantallaForja(Screen):
         super().__init__(**kwargs)
         self.gm = gm
 
-        # ── Fondo de pantalla (cambia según facción en on_pre_enter) ──────
         with self.canvas.before:
             Color(1, 1, 1, 1)
             self._bg_rect = Rectangle(
@@ -145,7 +122,6 @@ class PantallaForja(Screen):
             )
         self.bind(pos=self._actualizarFondo, size=self._actualizarFondo)
 
-        # Velo oscuro para mejorar contraste del contenido sobre el fondo
         with self.canvas.before:
             Color(0, 0, 0, 0.35)
             self._overlay = Rectangle(pos=self.pos, size=self.size)
@@ -156,9 +132,6 @@ class PantallaForja(Screen):
 
         raiz = BoxLayout(orientation='vertical', spacing=0)
 
-        # ══════════════════════════════════════════════════════════════════
-        # CABECERA (18%) — Imagen con la palabra "FORJA" integrada
-        # ══════════════════════════════════════════════════════════════════
         cabecera = Image(
             source=CABECERA_FORJA,
             allow_stretch=True,
@@ -167,18 +140,13 @@ class PantallaForja(Screen):
             size_hint=(1, 0.18)
         )
 
-        # ══════════════════════════════════════════════════════════════════
-        # CONTADOR DE TRANSMUTADORES (8%) — pastilla compacta con [icono] : [N]
-        # ══════════════════════════════════════════════════════════════════
         filaContador = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.08),
             padding=[dp(8), dp(4)]
         )
-        # Empuje izquierdo y derecho para centrar la cerda
         filaContador.add_widget(Widget(size_hint=(1, 1)))
 
-        # La "cerda": pastilla redondeada oscura con icono + ":" + número
         cerdaContador = BoxLayout(
             orientation='horizontal',
             size_hint=(None, 1),
@@ -223,9 +191,6 @@ class PantallaForja(Screen):
         filaContador.add_widget(cerdaContador)
         filaContador.add_widget(Widget(size_hint=(1, 1)))
 
-        # ══════════════════════════════════════════════════════════════════
-        # ZONA DE FUSIÓN (44%) — Runa1+Runa2 (izq) → Resultado (der)
-        # ══════════════════════════════════════════════════════════════════
         zonaFusion = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.44),
@@ -233,7 +198,6 @@ class PantallaForja(Screen):
             spacing=dp(4)
         )
 
-        # Columna izquierda: dos slots de entrada apilados
         columnaEntradas = BoxLayout(
             orientation='vertical',
             size_hint=(0.32, 1),
@@ -245,11 +209,9 @@ class PantallaForja(Screen):
         columnaEntradas.add_widget(self.slotIng1)
         columnaEntradas.add_widget(self.slotIng2)
 
-        # Click en slot lleno → limpiar ese slot
         self.slotIng1.bind(on_touch_down=self._touchSlotIng1)
         self.slotIng2.bind(on_touch_down=self._touchSlotIng2)
 
-        # Columna central: flecha decorativa (PNG, cambia según facción)
         columnaFlecha = BoxLayout(
             orientation='vertical',
             size_hint=(0.36, 1),
@@ -264,7 +226,6 @@ class PantallaForja(Screen):
         )
         columnaFlecha.add_widget(self.imgFlecha)
 
-        # Columna derecha: slot resultado (más pequeño, centrado verticalmente)
         columnaResultado = BoxLayout(
             orientation='vertical',
             size_hint=(0.32, 1),
@@ -279,9 +240,6 @@ class PantallaForja(Screen):
         zonaFusion.add_widget(columnaFlecha)
         zonaFusion.add_widget(columnaResultado)
 
-        # ══════════════════════════════════════════════════════════════════
-        # INVENTARIO DE RUNAS (15%) — scroll horizontal con runas básicas
-        # ══════════════════════════════════════════════════════════════════
         contenedorInventario = BoxLayout(
             orientation='vertical',
             size_hint=(1, 0.15),
@@ -311,9 +269,6 @@ class PantallaForja(Screen):
         scrollInv.add_widget(self.filaRunas)
         contenedorInventario.add_widget(scrollInv)
 
-        # ══════════════════════════════════════════════════════════════════
-        # BOTONERA INFERIOR (15%) — [Volver con marco]   [Forjar (icono yunque)]
-        # ══════════════════════════════════════════════════════════════════
         botonera = BoxLayout(
             orientation='horizontal',
             size_hint=(1, 0.15),
@@ -328,15 +283,12 @@ class PantallaForja(Screen):
             size=lambda *a: setattr(self._botRect, 'size', botonera.size)
         )
 
-        # Botón VOLVER — con marco decorativo Boton.png + texto "VOLVER" encima
         botonVolver = BotonConMarco(
             texto='VOLVER',
             marco_path=MARCO_BOTON,
             on_press_callback=self.volverAInventario,
             size_hint=(0.5, 1)
         )
-
-        # Botón FORJAR — con marco decorativo BotonForjar.png + texto "FORJAR"
         botonForjar = BotonConMarco(
             texto='FORJAR',
             marco_path=MARCO_BOTON,
@@ -347,10 +299,6 @@ class PantallaForja(Screen):
         botonera.add_widget(botonVolver)
         botonera.add_widget(botonForjar)
 
-        # ══════════════════════════════════════════════════════════════════
-        # MONTAJE FINAL: cabecera (18) + contador (8) + fusión (44) +
-        #                inventario (15) + botonera (15) = 100%
-        # ══════════════════════════════════════════════════════════════════
         raiz.add_widget(cabecera)
         raiz.add_widget(filaContador)
         raiz.add_widget(zonaFusion)
@@ -358,7 +306,7 @@ class PantallaForja(Screen):
         raiz.add_widget(botonera)
         self.add_widget(raiz)
 
-    # ── Eventos del ciclo de vida ────────────────────────────────────────
+    # ── Ciclo de vida ────────────────────────────────────────────────────
 
     def on_pre_enter(self, *args):
         self._aplicarFaccion()
@@ -411,10 +359,7 @@ class PantallaForja(Screen):
             self.filaRunas.add_widget(self._crearTarjetaRuna(runa))
 
     def _crearTarjetaRuna(self, runa: dict):
-        """
-        Tarjeta vertical: icono arriba + nombre debajo.
-        Tanto el icono como el botón de nombre asignan la runa al slot libre.
-        """
+        """Tarjeta: icono arriba + nombre display (bonito) debajo."""
         contenedor = BoxLayout(
             orientation='vertical',
             size_hint=(None, 1),
@@ -433,8 +378,9 @@ class PantallaForja(Screen):
         img.bind(on_press=lambda _, r=runa: self._asignarRuna(r))
         contenedor.add_widget(img)
 
+        # ── CAMBIO: nombre_runa() en lugar de runa.get('nombre') ──────────
         btn = Button(
-            text=runa.get('nombre', '?'),
+            text=nombre_runa(runa.get('nombre', '?')),
             background_color=(0.08, 0.08, 0.15, 0.95),
             background_normal='',
             color=(0.9, 0.75, 0.3, 1),
@@ -459,7 +405,6 @@ class PantallaForja(Screen):
         self.slotResultado.limpiar()
 
     def _touchSlotIng1(self, instance, touch):
-        # Click en slot lleno → limpiar ese slot.
         if instance.collide_point(*touch.pos) and instance.runa is not None:
             instance.limpiar()
             return True
@@ -487,7 +432,7 @@ class PantallaForja(Screen):
 
         if runa1 is None or runa2 is None:
             self._mostrarPopup(
-                'Faltan runas',
+                'Ups!',
                 'Coloca una runa en cada slot.',
                 (0.7, 0.3, 0.1, 1)
             )
@@ -496,22 +441,90 @@ class PantallaForja(Screen):
         resultado = self.gm.transmutar(runa1.get('nombre', ''), runa2.get('nombre', ''))
 
         if not resultado['ok']:
-            self._mostrarPopup('Error', resultado['mensaje'], (0.7, 0.1, 0.1, 1))
+            self._mostrarPopup('Ups!', resultado['mensaje'], (0.7, 0.1, 0.1, 1))
             return
 
         self.slotResultado.asignar(resultado['resultado'])
         self.slotIng1.limpiar()
         self.slotIng2.limpiar()
 
-        color = (0.2, 0.8, 0.3, 1) if resultado['es_valida'] else (0.7, 0.1, 0.1, 1)
-        self._mostrarPopup('Resultado', resultado['mensaje'], color)
+        # ── CAMBIO: popup con icono + nombre display de la runa resultante
+        runa_res     = resultado['resultado']
+        nombre_res   = nombre_runa(runa_res.get('nombre', ''))
+        icono_res    = icono_runa(runa_res.get('nombre', ''))
+        es_valida    = resultado['es_valida']
+        color_popup  = (0.2, 0.8, 0.3, 1) if es_valida else (0.7, 0.1, 0.1, 1)
+        titulo_popup = 'Transmutacion exitosa' if es_valida else 'Transmutacion fallida'
+
+        self._mostrarPopupResultado(titulo_popup, icono_res, nombre_res, color_popup)
 
         self._refrescarTransmutadores()
         self._cargarRunasDisponibles()
 
-    # ── Popup auxiliar ───────────────────────────────────────────────────
+    # ── Popups ───────────────────────────────────────────────────────────
+
+    def _mostrarPopupResultado(self, titulo, icono_path, nombre_display, color_titulo):
+        """Popup de resultado de transmutación: icono grande + nombre display."""
+        modal = ModalView(
+            size_hint=(0.75, 0.45),
+            auto_dismiss=True,
+            background_color=(0, 0, 0, 0)
+        )
+
+        contenedor = BoxLayout(orientation='vertical', padding=dp(16), spacing=dp(10))
+        with contenedor.canvas.before:
+            Color(0.05, 0.05, 0.1, 0.97)
+            self._popRect = RoundedRectangle(pos=contenedor.pos, size=contenedor.size, radius=[dp(16)])
+        contenedor.bind(
+            pos=lambda *a: setattr(self._popRect, 'pos', contenedor.pos),
+            size=lambda *a: setattr(self._popRect, 'size', contenedor.size)
+        )
+
+        # Título
+        lbl_titulo = Label(
+            text=titulo,
+            font_size=dp(16), bold=True, color=color_titulo,
+            size_hint=(1, None), height=dp(30),
+            halign='center', valign='middle'
+        )
+        lbl_titulo.bind(size=lbl_titulo.setter('text_size'))
+        contenedor.add_widget(lbl_titulo)
+
+        # Icono de la runa resultante
+        img_resultado = Image(
+            source=icono_path,
+            allow_stretch=True,
+            keep_ratio=True,
+            mipmap=True,
+            size_hint=(1, 1),
+        )
+        contenedor.add_widget(img_resultado)
+
+        # Nombre display
+        lbl_nombre = Label(
+            text=nombre_display,
+            font_size=dp(15), bold=True, color=BLANCO,
+            size_hint=(1, None), height=dp(28),
+            halign='center', valign='middle'
+        )
+        lbl_nombre.bind(size=lbl_nombre.setter('text_size'))
+        contenedor.add_widget(lbl_nombre)
+
+        # Botón OK
+        btn = BotonRedondeado(
+            text='OK', bg_color=COLOR_GUARDIANES, text_color=BLANCO,
+            radius=10, size_hint=(0.5, None), height=dp(38),
+            font_size=dp(13), bold=True,
+            pos_hint={'center_x': 0.5}
+        )
+        btn.bind(on_press=lambda _: modal.dismiss())
+        contenedor.add_widget(btn)
+
+        modal.add_widget(contenedor)
+        modal.open()
 
     def _mostrarPopup(self, titulo, mensaje, color_titulo):
+        """Popup genérico de texto (errores, avisos)."""
         modal = ModalView(
             size_hint=(0.8, 0.4),
             auto_dismiss=True,

@@ -73,12 +73,10 @@ class GameManager:
     # ═══════════════════════════════════
 
     def iniciar_juego(self, faccion: str):
-        # Si ya hay facción guardada, no permitir cambiarla
         if self.faccion is not None:
             print(f"[GameManager] Facción ya establecida: {self.faccion}. Ignorando.")
             return
 
-        # Normalizar — comparamos en minúsculas sin acentos
         faccion_lower = faccion.lower().strip()
         if 'guardian' in faccion_lower:
             self.faccion = 'guardian'
@@ -87,7 +85,6 @@ class GameManager:
         else:
             self.faccion = faccion_lower
 
-        # Persistir la facción elegida en BD
         recursos_repo.set_faccion(self.faccion)
 
         personajes = personaje_repo.get_by_faccion(self.faccion)
@@ -113,13 +110,11 @@ class GameManager:
             if item["catalogo_id"] == personaje_b["id"]:
                 self.personaje_activo_id = item["id"]
                 break
-        # Si por algún motivo no se asignó, intentar recuperarlo del inventario
         if self.personaje_activo_id is None:
             inv = inventario_repo.get_inventario_by_tipo('personaje')
             if inv:
                 self.personaje_activo_id = inv[0]['id']
 
-        # Inicializar la vida del jugador a vida llena del personaje inicial.
         pv_inicial = personaje_b.get("pv_base", 0)
         recursos_repo.set_vida(pv_inicial, pv_inicial)
 
@@ -152,10 +147,6 @@ class GameManager:
         return datos
 
     def cambiar_personaje_activo(self, inv_id: int):
-        """
-        Cambia el personaje activo SIN restaurar la vida del jugador.
-        La vida es un recurso del JUGADOR, no del personaje.
-        """
         self.personaje_activo_id = inv_id
         recursos_repo.set_personaje_activo_id(inv_id)
 
@@ -285,17 +276,10 @@ class GameManager:
     # ═══════════════════════════════════
 
     def preparar_combate(self, nodo_id: int) -> dict | None:
-        """
-        Construye y devuelve los objetos jugador y enemigo listos para combate
-        sin ejecutarlo. Usado por PantallaCombate para el modo paso a paso.
-
-        Devuelve {'jugador': obj, 'enemigo': obj} o None si hay algún error.
-        """
         nodo = self._mapa_repo.get_nodo(nodo_id)
         if nodo is None or nodo["estado"] == "bloqueado":
             return None
 
-        # Bloqueo por vida insuficiente
         vida_db = recursos_repo.get_vida()
         if vida_db["vida_max"] > 0 and vida_db["vida_actual"] <= 0:
             return None
@@ -311,20 +295,11 @@ class GameManager:
         return {"jugador": jugador, "enemigo": enemigo}
 
     def aplicar_recompensas_nodo(self, nodo_id: int) -> dict:
-        """
-        Aplica y devuelve las recompensas del nodo. Llamado por PantallaCombate
-        tras confirmar victoria en modo paso a paso.
-        También persiste la vida del jugador tras el combate.
-        """
         recompensas = self._dar_recompensas(nodo_id)
         self._mapa_repo.completar_nodo(nodo_id, estrellas=1)
         return recompensas
 
     def persistir_vida_tras_combate(self, vida_actual: int, vida_max: int):
-        """
-        Persiste la vida del jugador al terminar un combate paso a paso.
-        Llamado por PantallaCombate cuando el Encuentro termina.
-        """
         recursos_repo.set_vida(vida_actual, vida_max)
 
     def iniciar_combate(self, nodo_id: int) -> dict:
@@ -335,7 +310,6 @@ class GameManager:
         if nodo["estado"] == "bloqueado":
             return {"victoria": False, "log": ["Nodo bloqueado."], "recompensas": None}
 
-        # Bloqueo por vida insuficiente
         vida_db = recursos_repo.get_vida()
         if vida_db["vida_max"] > 0 and vida_db["vida_actual"] <= 0:
             recursos = recursos_repo.get_recursos() or {}
@@ -344,8 +318,8 @@ class GameManager:
                 "victoria": False,
                 "vida_insuficiente": True,
                 "log": [
-                    f"⚠ No tienes vida suficiente para combatir (0/{vida_db['vida_max']}).",
-                    f"Usa una poción para curarte antes de continuar.",
+                    f"No tienes vida suficiente para combatir (0/{vida_db['vida_max']}).",
+                    f"Usa una pocion para curarte antes de continuar.",
                     f"Pociones disponibles: {pociones}.",
                 ],
                 "recompensas": None,
@@ -361,14 +335,13 @@ class GameManager:
 
         log = self._encuentro.iniciar(jugador, enemigo)
 
-        # Protección: si ambos siguen vivos, desempatar por PV
         if jugador.esta_vivo() and enemigo.esta_vivo():
-            log.append("⏰ LÍMITE DE TURNOS alcanzado.")
+            log.append("LIMITE DE TURNOS alcanzado.")
             if jugador.vida >= enemigo.vida:
-                log.append(f"🏆 VICTORIA por PV — {jugador.nombre}: {jugador.vida} vs {enemigo.nombre}: {enemigo.vida}")
+                log.append(f"VICTORIA por PV — {jugador.nombre}: {jugador.vida} vs {enemigo.nombre}: {enemigo.vida}")
                 victoria = True
             else:
-                log.append(f"💀 DERROTA por PV — {jugador.nombre}: {jugador.vida} vs {enemigo.nombre}: {enemigo.vida}")
+                log.append(f"DERROTA por PV — {jugador.nombre}: {jugador.vida} vs {enemigo.nombre}: {enemigo.vida}")
                 victoria = False
         else:
             victoria = jugador.esta_vivo()
@@ -402,7 +375,6 @@ class GameManager:
         else:
             jugador = Guerrero(nombre=nombre, atk=atk, vida=vida, defensa=defensa)
 
-        # Aplicar bonuses de equipo
         equipo = self._equip_repo.get_equipo_de_personaje(self.personaje_activo_id)
         for slot in equipo:
             inv_items = inventario_repo.get_inventario()
@@ -430,7 +402,6 @@ class GameManager:
                             jugador.vida_max += bv
                     break
 
-        # Sobrescribir vida con la persistida en BD
         vida_db = recursos_repo.get_vida()
         if vida_db["vida_max"] > 0 and vida_db["vida_actual"] > 0:
             jugador.vida = min(vida_db["vida_actual"], jugador.vida_max)
@@ -450,36 +421,71 @@ class GameManager:
 
         recompensas = {}
 
-        # Monedas
-        monedas = MONEDAS_POR_NODO.get(nodo_id, 50)
-        recursos_repo.add_recurso("monedas", monedas)
-        recompensas["monedas"] = monedas
+        # Determinar si es primera victoria o repeticion.
+        # Se lee ANTES de completar_nodo porque ese metodo incrementa intentos.
+        nodo_info     = self._mapa_repo.get_nodo(nodo_id)
+        es_repeticion = nodo_info is not None and nodo_info.get("intentos", 0) >= 1
 
-        # Ticket gratis en nodos especiales
-        if nodo_id in NODOS_TICKET_GRATIS:
-            tipo_ticket = NODOS_TICKET_GRATIS[nodo_id]
-            if tipo_ticket == "aleatorio":
-                tipo_ticket = random.choice(["personaje", "arma"])
-            if tipo_ticket == "personaje":
-                recursos_repo.add_recurso("tickets_personaje", 1)
-                recompensas["ticket_personaje"] = 1
-            else:
-                recursos_repo.add_recurso("tickets_arma", 1)
-                recompensas["ticket_arma"] = 1
+        monedas_base = MONEDAS_POR_NODO.get(nodo_id, 50)
 
-        # Runa aleatoria en nodos 4+
-        if nodo_id in NODOS_DROP_RUNA:
-            RUNAS_BASICAS = ["RUNA_ATAQUE", "RUNA_MAGIA", "RUNA_DEFENSA", "RUNA_DESTREZA"]
-            nombre_runa_drop = random.choice(RUNAS_BASICAS)
-            runa = runa_repo.get_by_nombre(nombre_runa_drop)
-            if runa:
-                inventario_repo.agregar_item(self.jugador_id, runa["id"], "runa")
-                recompensas["runa"] = nombre_runa_drop
+        if not es_repeticion:
+            # ── PRIMERA VICTORIA ────────────────────────────────────────────
 
-        # Transmutador en nodos 5 y 10
-        if nodo_id in NODOS_TRANSMUTADOR:
-            recursos_repo.add_recurso("transmutadores", 1)
-            recompensas["transmutador"] = 1
+            recursos_repo.add_recurso("monedas", monedas_base)
+            recompensas["monedas"] = monedas_base
+
+            if nodo_id in NODOS_TICKET_GRATIS:
+                tipo_ticket = NODOS_TICKET_GRATIS[nodo_id]
+                if tipo_ticket == "aleatorio":
+                    tipo_ticket = random.choice(["personaje", "arma"])
+                if tipo_ticket == "personaje":
+                    recursos_repo.add_recurso("tickets_personaje", 1)
+                    recompensas["ticket_personaje"] = 1
+                else:
+                    recursos_repo.add_recurso("tickets_arma", 1)
+                    recompensas["ticket_arma"] = 1
+
+            if nodo_id in NODOS_DROP_RUNA:
+                RUNAS_BASICAS = ["RUNA_ATAQUE", "RUNA_MAGIA", "RUNA_DEFENSA", "RUNA_DESTREZA"]
+                nombre_runa_drop = random.choice(RUNAS_BASICAS)
+                runa = runa_repo.get_by_nombre(nombre_runa_drop)
+                if runa:
+                    inventario_repo.agregar_item(self.jugador_id, runa["id"], "runa")
+                    recompensas["runa"] = nombre_runa_drop
+
+            if nodo_id in NODOS_TRANSMUTADOR:
+                recursos_repo.add_recurso("transmutadores", 1)
+                recompensas["transmutador"] = 1
+
+        else:
+            # ── REPETICION ──────────────────────────────────────────────────
+
+            # Monedas: mitad redondeada
+            monedas_rep = max(1, monedas_base // 2)
+            recursos_repo.add_recurso("monedas", monedas_rep)
+            recompensas["monedas"] = monedas_rep
+
+            # Runa: 40% de probabilidad
+            if nodo_id in NODOS_DROP_RUNA and random.random() < 0.40:
+                RUNAS_BASICAS = ["RUNA_ATAQUE", "RUNA_MAGIA", "RUNA_DEFENSA", "RUNA_DESTREZA"]
+                nombre_runa_drop = random.choice(RUNAS_BASICAS)
+                runa = runa_repo.get_by_nombre(nombre_runa_drop)
+                if runa:
+                    inventario_repo.agregar_item(self.jugador_id, runa["id"], "runa")
+                    recompensas["runa"] = nombre_runa_drop
+
+            # Fragmentos en lugar de ticket: 1-10 de personaje O 1-10 de arma (50/50)
+            if nodo_id in NODOS_TICKET_GRATIS:
+                cantidad = random.randint(1, 10)
+                if random.random() < 0.5:
+                    recursos_repo.add_recurso("fragmentos_rojos", cantidad)
+                    recompensas["fragmentos_personaje"] = cantidad
+                else:
+                    recursos_repo.add_recurso("fragmentos_azules", cantidad)
+                    recompensas["fragmentos_arma"] = cantidad
+
+            # Transmutador: no cae en repeticion
+            # Tickets: no caen en repeticion
 
         return recompensas
 
@@ -562,9 +568,9 @@ class GameManager:
                 usados.add(inv_id)
 
         if id_runa1 is None:
-            return {"ok": False, "mensaje": f"No tienes runa '{nombre_runa_1}' en el inventario."}
+            return {"ok": False, "mensaje": f"No tienes tantas copias de la runa seleccionada."}
         if id_runa2 is None:
-            return {"ok": False, "mensaje": f"No tienes runa '{nombre_runa_2}' en el inventario."}
+            return {"ok": False, "mensaje": f"No tienes tantas copias de la runa seleccionada."}
 
         if recursos_repo.get_transmutadores() <= 0:
             return {"ok": False, "mensaje": "No tienes cargas de transmutador."}
@@ -576,7 +582,7 @@ class GameManager:
 
         runa_resultado = runa_repo.get_by_nombre(f"RUNA_{nombre_resultado}")
         if runa_resultado is None:
-            return {"ok": False, "mensaje": f"Runa resultado 'RUNA_{nombre_resultado}' no encontrada en el catálogo."}
+            return {"ok": False, "mensaje": f"Runa resultado 'RUNA_{nombre_resultado}' no encontrada en el catalogo."}
 
         inventario_repo.eliminar_item(id_runa1)
         inventario_repo.eliminar_item(id_runa2)
@@ -589,8 +595,8 @@ class GameManager:
             "es_valida": es_valida,
             "resultado": runa_resultado,
             "mensaje":   (
-                f"{'Transmutación exitosa' if es_valida else 'Transmutación fallida'}: "
-                f"{nombre_runa_1} + {nombre_runa_2} → RUNA_{nombre_resultado}"
+                f"{'Transmutacion exitosa' if es_valida else 'Transmutacion fallida'}: "
+                f"{nombre_runa_1} + {nombre_runa_2} -> RUNA_{nombre_resultado}"
             ),
         }
 
