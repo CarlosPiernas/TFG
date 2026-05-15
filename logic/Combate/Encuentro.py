@@ -21,7 +21,8 @@ class Encuentro:
         enc = Encuentro()
         enc.preparar(jugador, enemigo, prob_sorpresa=0.0)
         while not enc.terminado:
-            r = enc.turno_paso()
+            r = enc.turno_paso()          # turno normal
+            r = enc.turno_paso(jugador_ataca=False)  # jugador falla el minijuego
             # r['lineas']        -> lineas de log simplificadas para la UI
             # r['terminado']     -> bool
             # r['victoria']      -> bool
@@ -34,13 +35,6 @@ class Encuentro:
             # r['counter']       -> bool
             # r['dado']          -> bool
             # r['dado_resultado']-> int
-
-    Para pasar la probabilidad de ataque sorpresa usa DatosJugador:
-        prob = datos_jugador.probabilidad_ataque_sorpresa(nodo_id)
-        enc.preparar(jugador, enemigo, prob_sorpresa=prob)
-
-    Y cuando el jugador repita un nodo ya vencido, llama antes de entrar:
-        datos_jugador.registrar_repeticion_nodo(nodo_id)
     """
 
     # ─────────────────────────────────────────────────────
@@ -59,10 +53,18 @@ class Encuentro:
         self._turnos_sin_golpe     = 0
         self._boost_activo         = False
         self._atk_original_enemigo = enemigo.atk
-        self._prob_sorpresa        = prob_sorpresa   # 0.0 / 0.10 / 0.20 / 0.30
+        self._prob_sorpresa        = prob_sorpresa
+        self._fallos_consecutivos  = 0
         self._preparar_combate(jugador, enemigo)
 
-    def turno_paso(self):
+    def turno_paso(self, jugador_ataca=True):
+        """
+        Ejecuta un turno del combate.
+
+        jugador_ataca=True  → turno normal (el jugador ataca si sus stats lo permiten)
+        jugador_ataca=False → el jugador falla el minijuego: no ataca este turno,
+                              pero el enemigo sí puede atacar normalmente.
+        """
         self._counter_this_turn = False
         self._dado_this_turn    = False
         self._dado_resultado    = 0
@@ -78,11 +80,11 @@ class Encuentro:
 
         lineas.append(f"Turno {self.turno}")
 
-        # ── Berserker ───────────────────────────────────────────────────────
+        # ── Berserker ────────────────────────────────────────────────────────
         if isinstance(jugador, Guerrero) and jugador.berserker_activo:
             lineas.append("Modo Berserker activo!")
 
-        # ── Pasiva Asesino ──────────────────────────────────────────────────
+        # ── Pasiva Asesino — siempre se tira, gane o pierda el minijuego ─────
         if isinstance(jugador, Asesino):
             resultado, suerte = jugador.lanzar_suerte()
             self._dado_resultado = resultado
@@ -101,14 +103,35 @@ class Encuentro:
 
         atk_jugador = jugador.atk_efectivo if isinstance(jugador, (Mago, Asesino, Guerrero)) else jugador.atk
 
+        degrade = 20 if es_jefe else 10
+
+        # ── Si el jugador falla el minijuego, solo actúa el enemigo ──────────
+        if not jugador_ataca:
+            # Acumular fallos consecutivos
+            self._fallos_consecutivos += 1
+            if self._fallos_consecutivos >= 2:
+                enemigo.atk = int(enemigo.atk * 1.2)
+                lineas.append(f"{enemigo.nombre} aprovecha la debilidad del jugador")
+
+            self._resolver_solo_enemigo(jugador, enemigo, es_jefe, lineas, degrade)
+            if not self._vivo(jugador) or not self._vivo(enemigo):
+                self._cerrar_combate(lineas)
+                self.turno += 1
+                return self._estado(lineas)
+            self._resolver_ataque_sorpresa(jugador, enemigo, lineas)
+            self.turno += 1
+            return self._estado(lineas)
+
+        # ── Turno normal: el jugador ataca → resetear fallos consecutivos ─────
+        self._fallos_consecutivos = 0
+
+        # ── Turno normal: ambos pueden atacar ────────────────────────────────
         jugador_golpea = atk_jugador > enemigo.defensa
         enemigo_golpea = enemigo.atk > jugador.defensa
         empate_j       = atk_jugador == enemigo.defensa
         empate_e       = enemigo.atk == jugador.defensa
 
-        degrade = 20 if es_jefe else 10
-
-        # ── Antibucleinfinito ────────────────────────────────────────────────
+        # Antibucle infinito — si nadie puede golpear al otro
         nadie_golpea = (not jugador_golpea and not enemigo_golpea
                         and not empate_j and not empate_e)
         if nadie_golpea:
@@ -117,20 +140,16 @@ class Encuentro:
                 lineas.append(f"{jugador.nombre} y {enemigo.nombre} se miran con desafio")
                 self.turno += 1
                 return self._estado(lineas)
-            elif self._turnos_sin_golpe == 2:
-                lineas.append(f"{jugador.nombre} no es lo suficientemente poderoso")
-                self.turno += 1
-                return self._estado(lineas)
-            else:
+            elif self._turnos_sin_golpe >= 2:
                 if not self._boost_activo:
-                    enemigo.atk = int(self._atk_original_enemigo * 4)
+                    enemigo.atk = int(self._atk_original_enemigo * 2)
                     self._boost_activo = True
+                    lineas.append(f"{enemigo.nombre} se desespera y aumenta su fuerza")
                 enemigo_golpea = enemigo.atk > jugador.defensa
-                nadie_golpea   = False
         else:
             self._turnos_sin_golpe = 0
 
-        # ── Jugador golpea al enemigo ────────────────────────────────────────
+        # ── Jugador golpea al enemigo ─────────────────────────────────────────
         if jugador_golpea:
             vida_antes = enemigo.vida
             enemigo.perder_vida_por_golpe()
@@ -154,7 +173,35 @@ class Encuentro:
             self._cerrar_combate(lineas)
             return self._estado(lineas)
 
-        # ── Enemigo / Jefe golpea al jugador ────────────────────────────────
+        # ── Enemigo golpea al jugador ─────────────────────────────────────────
+        self._resolver_solo_enemigo(jugador, enemigo, es_jefe, lineas, degrade,
+                                    enemigo_golpea=enemigo_golpea,
+                                    empate_e=empate_e,
+                                    jugador_golpea=jugador_golpea,
+                                    empate_j=empate_j)
+
+        if not self._vivo(jugador) or not self._vivo(enemigo):
+            self._cerrar_combate(lineas)
+            self.turno += 1
+            return self._estado(lineas)
+
+        self._resolver_ataque_sorpresa(jugador, enemigo, lineas)
+
+        self.turno += 1
+        return self._estado(lineas)
+
+    # ─────────────────────────────────────────────────────
+    # Helper: solo el enemigo actúa
+    # ─────────────────────────────────────────────────────
+
+    def _resolver_solo_enemigo(self, jugador, enemigo, es_jefe, lineas, degrade,
+                                enemigo_golpea=None, empate_e=None,
+                                jugador_golpea=False, empate_j=False):
+        if enemigo_golpea is None:
+            enemigo_golpea = enemigo.atk > jugador.defensa
+        if empate_e is None:
+            empate_e = enemigo.atk == jugador.defensa
+
         if enemigo_golpea:
             if es_jefe:
                 contadores_a_perder = 2
@@ -164,8 +211,7 @@ class Encuentro:
                         lineas.append("Tirada de salvacion: superada")
                         enemigo.atk     = max(0, enemigo.atk     - degrade)
                         enemigo.defensa = max(0, enemigo.defensa - degrade)
-                        self.turno += 1
-                        return self._estado(lineas)
+                        return
                     else:
                         lineas.append("Tirada de salvacion: fallida")
 
@@ -204,14 +250,7 @@ class Encuentro:
             self._aplicar_muerte_si_procede(jugador)
             self._aplicar_muerte_si_procede(enemigo)
 
-        if not self._vivo(jugador) or not self._vivo(enemigo):
-            self._cerrar_combate(lineas)
-            self.turno += 1
-            return self._estado(lineas)
-
-        # ── Ataque sorpresa (solo en nodos repetidos) ────────────────────────
-        # Se lanza DESPUES del combate normal, al final del turno.
-        # Solo actua si el jugador sigue vivo y hay probabilidad > 0.
+    def _resolver_ataque_sorpresa(self, jugador, enemigo, lineas):
         if self._prob_sorpresa > 0.0 and self._vivo(jugador):
             if random.random() < self._prob_sorpresa:
                 jugador.contador_danio = max(0, jugador.contador_danio - 1)
@@ -219,11 +258,6 @@ class Encuentro:
                 lineas.append(f"{enemigo.nombre} realiza un ataque sorpresa y dana a {jugador.nombre}")
                 if not self._vivo(jugador):
                     self._cerrar_combate(lineas)
-                    self.turno += 1
-                    return self._estado(lineas)
-
-        self.turno += 1
-        return self._estado(lineas)
 
     # ─────────────────────────────────────────────────────
     # HELPERS MODO PASO A PASO
@@ -243,10 +277,9 @@ class Encuentro:
         self.victoria  = self._vivo(self.jugador)
 
     def _estado(self, lineas):
-        berserker = (
-            isinstance(self.jugador, Guerrero) and self.jugador.berserker_activo
-            if hasattr(self, 'jugador') else False
-        )
+        berserker = False
+        if hasattr(self, 'jugador') and isinstance(self.jugador, Guerrero):
+            berserker = self.jugador.berserker_activo
         jugador = self.jugador if hasattr(self, 'jugador') else None
         enemigo = self.enemigo if hasattr(self, 'enemigo') else None
         return {
@@ -267,13 +300,9 @@ class Encuentro:
     def _aplicar_pasiva_mago(self, mago, enemigo, lineas):
         if mago.intentar_pasiva():
             self._counter_this_turn = True
-            vida_antes = enemigo.vida
             enemigo.contador_danio = max(0, enemigo.contador_danio - 1)
             self._aplicar_muerte_si_procede(enemigo)
-            vida_perdida = vida_antes - enemigo.vida
-            lineas.append(
-                f"{mago.nombre} realizo un CounterSpell"
-            )
+            lineas.append(f"{mago.nombre} realizo un CounterSpell")
 
     # ─────────────────────────────────────────────────────
     # MODO COMPLETO (para tests, sin cambios)

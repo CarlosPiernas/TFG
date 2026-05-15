@@ -406,3 +406,19 @@ ENEMIGO_POR_NODO = {
         10: 'guardian_asesino_s',
     },
 }
+# ══════════════════════════════════════════════════════
+# MINIJUEGO GUERRERO — spam de barra
+# ══════════════════════════════════════════════════════
+
+# Segundos que dura cada turno del Guerrero
+GUERRERO_SPAM_DURACION = 4
+
+# Tramos de ATK → incremento por tap (en puntos sobre 100)
+# Cada tap sube la barra este porcentaje
+GUERRERO_TRAMOS_ATK = [
+    (100, 2),   # ATK <= 100 → +2 por tap (necesita ~50 taps, muy difícil)
+    (200, 5),   # ATK <= 200 → +5 por tap (necesita ~20 taps, difícil)
+    (300, 10),  # ATK <= 300 → +10 por tap (necesita ~10 taps, normal)
+    (400, 15),  # ATK <= 400 → +15 por tap (necesita ~7 taps, fácil)
+    (500, 20),  # ATK <= 500 → +20 por tap (necesita ~5 taps, muy fácil)
+]
