@@ -75,7 +75,7 @@ class PantallaSeleccion(Screen):
         self.btn_guardianes = Button(
             text='',
             background_normal='',
-            background_color=(0, 0, 0, 0),  # totalmente transparente
+            background_color=(0, 0, 0, 0),
             size_hint=(0.5, 1),
             pos_hint={'x': 0, 'y': 0}
         )
@@ -98,7 +98,7 @@ class PantallaSeleccion(Screen):
             opacity=0
         )
 
-        # Degradado negro apilado (de arriba opaco a transparente en el centro)
+        # Degradado negro apilado
         self.degradado = FloatLayout(size_hint=(1, 1), pos_hint={'x': 0, 'y': 0})
         capas = [0.82, 0.75, 0.68, 0.60, 0.52, 0.44, 0.36, 0.28, 0.20, 0.13, 0.07, 0.03, 0.01, 0.0]
         altura_capa = 1.0 / len(capas)
@@ -111,10 +111,9 @@ class PantallaSeleccion(Screen):
             with capa.canvas:
                 Color(0, 0, 0, alpha)
                 self._capa_rect = Rectangle(pos=capa.pos, size=capa.size)
-                # closure para actualizar cada rect al resize
                 def _bind(c):
                     with c.canvas:
-                        col = Color(0, 0, 0, 0)  # placeholder
+                        col = Color(0, 0, 0, 0)
                     c.bind(
                         pos=lambda inst, val: setattr(inst.canvas.children[-2], 'pos', val),
                         size=lambda inst, val: setattr(inst.canvas.children[-2], 'size', val)
@@ -135,13 +134,13 @@ class PantallaSeleccion(Screen):
         )
         self.label_info.bind(size=self.label_info.setter('text_size'))
 
-        # Logo de la facción — en el tercio inferior
+        # FIX nº4: logo bajado de 'top': 0.55 a 'top': 0.38
         self.logo_faccion = Image(
             source='',
             allow_stretch=True,
             keep_ratio=True,
             size_hint=(0.6, 0.22),
-            pos_hint={'center_x': 0.5, 'top': 0.55}
+            pos_hint={'center_x': 0.5, 'top': 0.38}
         )
 
         self.panel_info.add_widget(self.degradado)
@@ -196,7 +195,7 @@ class PantallaSeleccion(Screen):
 
         self.layout.add_widget(self.btn_guardianes)
         self.layout.add_widget(self.btn_anomalias)
-        self.layout.add_widget(self.overlay_izq)  
+        self.layout.add_widget(self.overlay_izq)
         self.layout.add_widget(self.overlay_der)
         self.layout.add_widget(self.panel_info)
         self.add_widget(self.layout)
@@ -211,10 +210,8 @@ class PantallaSeleccion(Screen):
 
     def _pulsar_guardianes(self, *args):
         if self._info_visible == 'guardian':
-            # Segunda pulsación → confirmar
             self._mostrar_popup('guardian')
         else:
-            # Primera pulsación → mostrar info en el lado derecho
             self._mostrar_info(INFO_GUARDIANES, COLOR_GUARDIANES, 'guardian')
 
     def _pulsar_anomalias(self, *args):
@@ -230,7 +227,6 @@ class PantallaSeleccion(Screen):
         self.logo_faccion.source = LOGO_GUARDIAN if faccion == 'guardian' else LOGO_ANOMALIA
         self.logo_faccion.reload()
 
-        # Panel aparece en el lado contrario al pulsado
         if faccion == 'guardian':
             self.panel_info.pos_hint = {'center_x': 0.75, 'top': 1}
             Animation(opacity=1, duration=0.3, t='in_out_quad').start(self.overlay_der)
@@ -244,11 +240,10 @@ class PantallaSeleccion(Screen):
         Animation(opacity=1, duration=0.3, t='in_out_quad').start(self.panel_info)
 
     def _mostrar_popup(self, faccion):
-        nombre  = NOMBRE_GUARDIAN if faccion == 'guardian' else NOMBRE_ANOMALIA
-        color   = COLOR_GUARDIANES if faccion == 'guardian' else COLOR_ANOMALIAS
-        sprite  = None
+        nombre = NOMBRE_GUARDIAN if faccion == 'guardian' else NOMBRE_ANOMALIA
+        color  = COLOR_GUARDIANES if faccion == 'guardian' else COLOR_ANOMALIAS
+        sprite = None
 
-        # Contenido del popup
         contenido = BoxLayout(orientation='vertical', spacing=dp(12), padding=dp(16))
 
         contenido.add_widget(Label(
@@ -308,7 +303,6 @@ class PantallaSeleccion(Screen):
 
     def _cerrar_popup(self, popup):
         popup.dismiss()
-        # Ocultar el panel de info al cancelar
         Animation(opacity=0, duration=0.2).start(self.panel_info)
         Animation(opacity=0, duration=0.2).start(self.overlay_izq)
         Animation(opacity=0, duration=0.2).start(self.overlay_der)
