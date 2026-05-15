@@ -102,6 +102,33 @@ def _equipo_fila(icono_inicial, ancho_icono):
     return fila, icono, lbl_nombre, lbl_stats
 
 
+def _popup_simple(mensaje, color_btn=None):
+    """Popup de un solo mensaje con botón OK."""
+    if color_btn is None:
+        color_btn = COLOR_GUARDIANES
+    modal = ModalView(size_hint=(0.75, None), height=dp(140),
+                      background_color=(0, 0, 0, 0), auto_dismiss=True)
+    caja = BoxLayout(orientation='vertical', padding=dp(16), spacing=dp(10))
+    with caja.canvas.before:
+        Color(0.05, 0.05, 0.1, 0.97)
+        r = RoundedRectangle(pos=caja.pos, size=caja.size, radius=[dp(12)])
+    caja.bind(pos=lambda *a: setattr(r, 'pos', caja.pos),
+              size=lambda *a: setattr(r, 'size', caja.size))
+    lbl = Label(text=mensaje, font_size=dp(13), bold=True, color=BLANCO,
+                halign='center', valign='middle', size_hint=(1, 1))
+    lbl.bind(size=lbl.setter('text_size'))
+    btn = Button(text='OK', background_normal='', bold=True,
+                 background_color=color_btn, color=BLANCO,
+                 font_size=dp(13), size_hint=(0.5, None), height=dp(38),
+                 pos_hint={'center_x': 0.5})
+    btn.bind(on_press=lambda *a: modal.dismiss())
+    caja.add_widget(lbl)
+    caja.add_widget(btn)
+    modal.add_widget(caja)
+    modal.open()
+    return modal
+
+
 class PantallaPrincipal(Screen):
     def __init__(self, gm=None, **kwargs):
         super().__init__(**kwargs)
@@ -129,7 +156,6 @@ class PantallaPrincipal(Screen):
             size=lambda *a: setattr(self._headerRect, 'size', barraTop.size)
         )
 
-        # ── Logo facción — al pulsarlo abre el popup de opciones ─────────────
         self.logoFaccion = Button(
             background_normal=PLACEHOLDER,
             background_down=PLACEHOLDER,
@@ -169,6 +195,8 @@ class PantallaPrincipal(Screen):
 
         contenedorVida.add_widget(self.barraVida)
         self.barraVida.bind(pos=self._dibujarBarraVida, size=self._dibujarBarraVida)
+        # Tap en la barra de vida → popup de poción
+        self.barraVida.bind(on_touch_down=self._onTapVida)
 
         filaMonedas = BoxLayout(
             orientation='horizontal',
@@ -340,6 +368,59 @@ class PantallaPrincipal(Screen):
         self._pociones_actuales = 5
         self._porcentaje_vida = 1.0
 
+    # ── Popup de poción (tap en barra de vida) ────────────────────────────────
+
+    def _onTapVida(self, instance, touch):
+        if not instance.collide_point(*touch.pos):
+            return
+        pociones = self._pociones_actuales
+        if pociones <= 0:
+            _popup_simple('No tienes pociones actualmente', (0.7, 0.1, 0.1, 1))
+            return
+
+        # Popup de confirmación
+        modal = ModalView(size_hint=(0.75, None), height=dp(180),
+                          background_color=(0, 0, 0, 0), auto_dismiss=True)
+        caja = BoxLayout(orientation='vertical', padding=dp(16), spacing=dp(10))
+        with caja.canvas.before:
+            Color(0.05, 0.05, 0.1, 0.97)
+            r = RoundedRectangle(pos=caja.pos, size=caja.size, radius=[dp(12)])
+        caja.bind(pos=lambda *a: setattr(r, 'pos', caja.pos),
+                  size=lambda *a: setattr(r, 'size', caja.size))
+
+        lbl = Label(
+            text=f'¿Consumir una poción?\nPociones disponibles: {pociones}/5',
+            font_size=dp(13), bold=True, color=BLANCO,
+            halign='center', valign='middle', size_hint=(1, 1))
+        lbl.bind(size=lbl.setter('text_size'))
+
+        filaBtns = BoxLayout(orientation='horizontal', size_hint=(1, None),
+                             height=dp(42), spacing=dp(10))
+        btnSi = Button(text='SÍ', background_normal='', bold=True,
+                       background_color=COLOR_GUARDIANES, color=BLANCO,
+                       font_size=dp(14), size_hint=(0.5, 1))
+        btnNo = Button(text='NO', background_normal='', bold=True,
+                       background_color=(0.4, 0.4, 0.4, 1), color=BLANCO,
+                       font_size=dp(14), size_hint=(0.5, 1))
+        btnNo.bind(on_press=lambda *a: modal.dismiss())
+        btnSi.bind(on_press=lambda *a: self._consumirPocion(modal))
+
+        filaBtns.add_widget(btnSi)
+        filaBtns.add_widget(btnNo)
+        caja.add_widget(lbl)
+        caja.add_widget(filaBtns)
+        modal.add_widget(caja)
+        modal.open()
+
+    def _consumirPocion(self, modal):
+        modal.dismiss()
+        ok = self.gm.usar_pocion() if self.gm else False
+        self.refrescarDatos()
+        if ok:
+            _popup_simple('Poción consumida con éxito', COLOR_GUARDIANES)
+        else:
+            _popup_simple('No se pudo consumir la poción', (0.7, 0.1, 0.1, 1))
+
     # ── Popup de opciones (logo facción) ─────────────────────────────────────
 
     def _abrirMenuOpciones(self):
@@ -414,7 +495,6 @@ class PantallaPrincipal(Screen):
 
     def _juegoNuevo(self, modal):
         modal.dismiss()
-        # Ruta al archivo de BD
         ruta_bd = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             '..', 'data', 'game.db'
@@ -424,7 +504,6 @@ class PantallaPrincipal(Screen):
                 os.remove(ruta_bd)
         except Exception as e:
             print(f"[home_screen] Error al borrar BD: {e}")
-        # Reiniciar la app para volver a la pantalla de selección de facción
         from kivy.app import App
         App.get_running_app().stop()
 
@@ -520,22 +599,40 @@ class PantallaPrincipal(Screen):
                 if datos:
                     nombre_db = datos.get('nombre', '')
                     self.lblNombreArma.text = nombre_arma(nombre_db)
-                    self.lblStatArma.text   = f"+{datos.get('bonus_atk',0)}ATK  +{datos.get('bonus_def',0)}DEF"
-                    self.iconoArma.source   = icono_arma(nombre_db)
+                    partes = []
+                    for campo, etiqueta in [('bonus_atk', 'ATK'), ('bonus_magia', 'MAG'),
+                                            ('bonus_def', 'DEF'), ('bonus_destreza', 'DES')]:
+                        v = datos.get(campo, 0)
+                        if v != 0:
+                            partes.append(f"{'+' if v > 0 else ''}{v}{etiqueta}")
+                    self.lblStatArma.text = ' '.join(partes)
+                    self.iconoArma.source = icono_arma(nombre_db)
                     self.iconoArma.reload()
             elif slot == 'runa_1':
                 datos = runa_repo.get_by_id(inv_item['catalogo_id'])
                 if datos:
                     self.lblNombreRuna1.text = datos.get('nombre', '—')
-                    self.lblStatRuna1.text   = f"+{datos.get('bonus_atk',0)}ATK +{datos.get('bonus_magia',0)}MAG +{datos.get('bonus_def',0)}DEF"
-                    self.iconoRuna1.source   = icono_runa(datos.get('nombre', ''))
+                    partes = []
+                    for campo, etiqueta in [('bonus_atk', 'ATK'), ('bonus_magia', 'MAG'),
+                                            ('bonus_def', 'DEF'), ('bonus_destreza', 'DES')]:
+                        v = datos.get(campo, 0)
+                        if v != 0:
+                            partes.append(f"{'+' if v > 0 else ''}{v}{etiqueta}")
+                    self.lblStatRuna1.text = ' '.join(partes)
+                    self.iconoRuna1.source = icono_runa(datos.get('nombre', ''))
                     self.iconoRuna1.reload()
             elif slot == 'runa_2':
                 datos = runa_repo.get_by_id(inv_item['catalogo_id'])
                 if datos:
                     self.lblNombreRuna2.text = datos.get('nombre', '—')
-                    self.lblStatRuna2.text   = f"+{datos.get('bonus_atk',0)}ATK +{datos.get('bonus_magia',0)}MAG +{datos.get('bonus_def',0)}DEF"
-                    self.iconoRuna2.source   = icono_runa(datos.get('nombre', ''))
+                    partes = []
+                    for campo, etiqueta in [('bonus_atk', 'ATK'), ('bonus_magia', 'MAG'),
+                                            ('bonus_def', 'DEF'), ('bonus_destreza', 'DES')]:
+                        v = datos.get(campo, 0)
+                        if v != 0:
+                            partes.append(f"{'+' if v > 0 else ''}{v}{etiqueta}")
+                    self.lblStatRuna2.text = ' '.join(partes)
+                    self.iconoRuna2.source = icono_runa(datos.get('nombre', ''))
                     self.iconoRuna2.reload()
 
         recursos = self.gm.get_recursos()
