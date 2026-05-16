@@ -150,6 +150,7 @@ ARMA_LORE = {
     'Tirada del Destino': 'Cuchilla de pura energía que al empuñar te da la sensación de que puedes forzar tu propia suerte.',
     'Hambre Voraz': 'Maza pesada que al golpear devora la piel y consume la vida de sus oponentes.',
     'Magia Interior': 'Abrumador poder antiguo que impregna a su portador de la sensación de que poseerlo conlleva un riesgo elevado pero obligatorio.',
+    'Sombra Runica': 'Fragmento solidificado del vacío, tallado en forma de bastón por una mano que ya no existe. Las runas grabadas en su superficie no fueron escritas, sino arrancadas de la memoria de mundos consumidos.',
 }
 
 def icono_arma(nombre_db: str) -> str:
