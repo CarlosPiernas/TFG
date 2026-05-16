@@ -398,7 +398,7 @@ ENEMIGO_POR_NODO = {
         3:  'anomalia_asesino2_a',
         4:  'anomalia_guerrero2_a',
         5:  'anomalia_mago_s',
-        6:  'anomalia_guerrero_a',
+        6:  'anomalia_mago_a',
         7:  'anomalia_asesino_a',
         8:  'anomalia_asesino2_b',
         9:  'anomalia_mago2_a',
