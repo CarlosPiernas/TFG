@@ -339,25 +339,13 @@ PERSONAJES_CON_DADO        = {'guardian_asesino_s'}
 PERSONAJES_CON_BERSERKER_B = {'anomalia_guerrero_s'}
 
 
-# FIX: anomalia_asesino_b tiene la B mayúscula en TODOS sus estados como jugador
-_JUGADOR_B_MAYUS = {'anomalia_asesino_b'}
-
 def obtenerRutaJugador(nombre: str, estado: str) -> str:
     n = nombre.lower()
-    if n in _JUGADOR_B_MAYUS:
-        estado_archivo = estado[0].upper() + estado[1:]
-        return f'{RUTA_CHARACTERS}/{n}/{n}_{estado_archivo}.png'
     return f'{RUTA_CHARACTERS}/{n}/{n}_{estado}.png'
 
 
-# FIX: anomalia_asesino_b como enemigo solo tiene B mayúscula en inventario y splash
-_ENEMIGO_B_MAYUS = {'inventario', 'splash'}
-
 def obtenerRutaEnemigo(nombre_sprite: str, estado: str) -> str:
     n = nombre_sprite.lower()
-    if n == 'anomalia_asesino_b' and estado in _ENEMIGO_B_MAYUS:
-        estado_archivo = estado[0].upper() + estado[1:]
-        return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado_archivo}.png'
     return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado}.png'
 
 
