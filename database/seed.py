@@ -58,6 +58,7 @@ ARMAS = [
     ("Hambre Voraz",        "S", 55, 0,  0, 55, 0,  None, "TODO: efecto especial", "assets/logos/IconoMazaS.png"),
     ("Magia Interior",      "S", 0,  55, 0, 40, 0,  None, "TODO: efecto especial", "assets/logos/IconoBastonS.png"),
     ("Tirada del Destino",  "S", 25, 0,  0, 0,  50, None, "TODO: efecto especial", "assets/logos/IconoDagaS.png"),
+    ("Sombra Runica",       "S", 0, 55, 0, 40, 0, None, "TODO: efecto especial", "assets/logos/IconoSombras.png"),
 ]
 
 #(nombre, rareza, bonus_atk, bonus_magia, bonus_pv, bonus_def, bonus_destreza, efecto_especial)

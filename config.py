@@ -121,6 +121,7 @@ ICONO_ARMA_BASTON_B   = 'assets/logos/IconoBastonB.png'
 ICONO_ARMA_DAGA_S     = 'assets/logos/IconoDagaS.png'
 ICONO_ARMA_MAZA_S     = 'assets/logos/IconoMazaS.png'
 ICONO_ARMA_BASTON_S   = 'assets/logos/IconoBastonS.png'
+ICONO_ARMA_SOMBRAS_S = 'assets/logos/IconoSombras.png'
 
 ARMA_ICONOS = {
     'Daga':               ICONO_ARMA_DAGA_B,
@@ -129,6 +130,7 @@ ARMA_ICONOS = {
     'Tirada del Destino': ICONO_ARMA_DAGA_S,
     'Hambre Voraz':       ICONO_ARMA_MAZA_S,
     'Magia Interior':     ICONO_ARMA_BASTON_S,
+    'Sombra Runica':      ICONO_ARMA_SOMBRAS_S,
 }
 
 ARMA_NOMBRES_DISPLAY = {
@@ -138,6 +140,7 @@ ARMA_NOMBRES_DISPLAY = {
     'Tirada del Destino': 'Apuesta Amañada',
     'Hambre Voraz':       'Hambre Voraz',
     'Magia Interior':     'Magia Interior',
+    'Sombra Runica':      'Sombra Rúnica',
 }
 
 ARMA_LORE = {
@@ -205,6 +208,14 @@ PERSONAJE_NOMBRES_DISPLAY = {
     'Guardian_Mago_A':     'Velen, el Profeta Rúnico',
     'Guardian_Asesino_S':  'Varek, el Trunca Suertes',
     'Guardian_Mago_S':     'Nara, la Última Arma',
+    'Anomalia_Asesino2_A':  'Azote Sombrío',
+    'Anomalia_Guerrero2_A': 'Sombra Inquebrantable',
+    'Anomalia_Asesino2_B':  'Segador Ciego',
+    'Anomalia_Mago2_A':     'Ecos del Olvido',
+    'Guardian_Asesino2_A':  'Nyx, el Destello Escarlata',
+    'Guardian_Guerrero2_B': 'Rox, el Nexo Eléctrico',
+    'Guardian_Mago2_A':     'Gideon, el Catalizador',
+    'Guardian_Guerrero2_A': 'Orion, el Bastión Inquebrantable',
 }
 
 PERSONAJE_LORE = {
@@ -383,26 +394,26 @@ ENEMIGO_POR_NODO = {
     'guardian': {
         1:  'anomalia_guerrero_b',
         2:  'anomalia_asesino_b',
-        3:  'anomalia_asesino_a',
-        4:  'anomalia_mago_a',
+        3:  'anomalia_asesino2_a',
+        4:  'anomalia_guerrero2_a',
         5:  'anomalia_mago_s',
-        6:  'anomalia_guerrero_b',
-        7:  'anomalia_asesino_b',
-        8:  'anomalia_asesino_a',
-        9:  'anomalia_mago_a',
+        6:  'anomalia_guerrero_a',
+        7:  'anomalia_asesino_a',
+        8:  'anomalia_asesino2_b',
+        9:  'anomalia_mago2_a',
         10: 'anomalia_guerrero_s',
     },
     # Jugador Anomalías → enemigos son Guardianes
     'anomalia': {
         1:  'guardian_guerrero_b',
         2:  'guardian_mago_b',
-        3:  'guardian_mago_a',
-        4:  'guardian_guerrero_a',
+        3:  'guardian_asesino2_a',
+        4:  'guardian_guerrero2_b',
         5:  'guardian_mago_s',
-        6:  'guardian_guerrero_b',
-        7:  'guardian_mago_b',
-        8:  'guardian_mago_a',
-        9:  'guardian_guerrero_a',
+        6:  'guardian_guerrero_a',
+        7:  'guardian_mago_a',
+        8:  'guardian_mago2_a',
+        9:  'guardian_guerrero2_a',
         10: 'guardian_asesino_s',
     },
 }
