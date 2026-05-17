@@ -64,7 +64,7 @@ def _incremento_spam(atk):
 
 def _duracion_mago(magia):
     """Tiempo en segundos para repetir la secuencia, según la magia."""
-    return max(3, 3 + int(magia) // 100)
+    return max(2, 2 + int(magia) // 150)
 
 
 # =============================================================================
@@ -854,13 +854,13 @@ class PantallaCombate(Screen):
             br.set_estado('activo' if i == idx else 'normal')
         # Apagar y pasar a la siguiente
         self._mago_show_ev = Clock.schedule_once(
-            lambda dt, p=paso: self._apagarYSiguiente(p), 0.55)
+            lambda dt, p=paso: self._apagarYSiguiente(p), 0.30)
 
     def _apagarYSiguiente(self, paso):
         for br in self.btnRunas:
             br.set_estado('normal')
         self._mago_show_ev = Clock.schedule_once(
-            lambda dt, p=paso+1: self._mostrarSiguienteRuna(p), 0.15)
+            lambda dt, p=paso+1: self._mostrarSiguienteRuna(p), 0.08)
 
     def _activarFaseJugador(self):
         """Activa el turno del jugador para repetir la secuencia."""

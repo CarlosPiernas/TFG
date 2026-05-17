@@ -420,9 +420,5 @@ GUERRERO_TRAMOS_ATK = [
     (200, 5),   # ATK <= 200 → +5 por tap (necesita ~20 taps, difícil)
     (300, 10),  # ATK <= 300 → +10 por tap (necesita ~10 taps, normal)
     (400, 15),  # ATK <= 400 → +15 por tap (necesita ~7 taps, fácil)
-    (500, 20),  # ATK <= 500 → +20 por tap (necesita ~5 taps, muy fácil)
-<<<<<<< HEAD
+    (500, 20)  # ATK <= 500 → +20 por tap (necesita ~5 taps, muy fácil)
 ]
-=======
-]
->>>>>>> origin/main
