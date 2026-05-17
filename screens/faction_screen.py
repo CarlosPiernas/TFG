@@ -121,20 +121,24 @@ class PantallaSeleccion(Screen):
                 _bind(capa)
             self.degradado.add_widget(capa)
 
-        # Texto del lore — en el tercio superior
+        # Label de lore
         self.label_info = Label(
             text='',
             font_size=dp(13),
             color=BLANCO,
             halign='center',
             valign='top',
-            size_hint=(0.9, 0.45),
-            pos_hint={'center_x': 0.5, 'top': 0.95},
+            size_hint=(0.9, 0.60),
+            pos_hint={'center_x': 0.5, 'top': 0.97},
             markup=True
         )
         self.label_info.bind(size=self.label_info.setter('text_size'))
 
+<<<<<<< HEAD
         # FIX nº4: logo bajado de 'top': 0.55 a 'top': 0.38
+=======
+        # Logo de facción
+>>>>>>> origin/main
         self.logo_faccion = Image(
             source='',
             allow_stretch=True,
@@ -180,19 +184,6 @@ class PantallaSeleccion(Screen):
             pos=lambda *a: setattr(self._ovl_der_rect, 'pos', self.overlay_der.pos),
             size=lambda *a: setattr(self._ovl_der_rect, 'size', self.overlay_der.size)
         )
-
-        self.label_info = Label(
-            text='',
-            font_size=dp(13),
-            color=BLANCO,
-            halign='center',
-            valign='top',
-            size_hint=(0.9, 0.35),
-            pos_hint={'center_x': 0.5, 'top': 0.92},
-            markup=True
-        )
-        self.label_info.bind(size=self.label_info.setter('text_size'))
-        self.panel_info.add_widget(self.label_info)
 
         self.layout.add_widget(self.btn_guardianes)
         self.layout.add_widget(self.btn_anomalias)

@@ -156,6 +156,7 @@ class PantallaPrincipal(Screen):
             size=lambda *a: setattr(self._headerRect, 'size', barraTop.size)
         )
 
+        # ── Logo facción — al pulsarlo abre el popup de opciones ─────────────
         self.logoFaccion = Button(
             background_normal=PLACEHOLDER,
             background_down=PLACEHOLDER,

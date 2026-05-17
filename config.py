@@ -121,6 +121,7 @@ ICONO_ARMA_BASTON_B   = 'assets/logos/IconoBastonB.png'
 ICONO_ARMA_DAGA_S     = 'assets/logos/IconoDagaS.png'
 ICONO_ARMA_MAZA_S     = 'assets/logos/IconoMazaS.png'
 ICONO_ARMA_BASTON_S   = 'assets/logos/IconoBastonS.png'
+ICONO_ARMA_SOMBRAS_S = 'assets/logos/IconoSombras.png'
 
 ARMA_ICONOS = {
     'Daga':               ICONO_ARMA_DAGA_B,
@@ -129,6 +130,7 @@ ARMA_ICONOS = {
     'Tirada del Destino': ICONO_ARMA_DAGA_S,
     'Hambre Voraz':       ICONO_ARMA_MAZA_S,
     'Magia Interior':     ICONO_ARMA_BASTON_S,
+    'Sombra Runica':      ICONO_ARMA_SOMBRAS_S,
 }
 
 ARMA_NOMBRES_DISPLAY = {
@@ -138,6 +140,7 @@ ARMA_NOMBRES_DISPLAY = {
     'Tirada del Destino': 'Apuesta Amañada',
     'Hambre Voraz':       'Hambre Voraz',
     'Magia Interior':     'Magia Interior',
+    'Sombra Runica':      'Sombra Rúnica',
 }
 
 ARMA_LORE = {
@@ -147,6 +150,7 @@ ARMA_LORE = {
     'Tirada del Destino': 'Cuchilla de pura energía que al empuñar te da la sensación de que puedes forzar tu propia suerte.',
     'Hambre Voraz': 'Maza pesada que al golpear devora la piel y consume la vida de sus oponentes.',
     'Magia Interior': 'Abrumador poder antiguo que impregna a su portador de la sensación de que poseerlo conlleva un riesgo elevado pero obligatorio.',
+    'Sombra Runica': 'Fragmento solidificado del vacío, tallado en forma de bastón por una mano que ya no existe. Las runas grabadas en su superficie no fueron escritas, sino arrancadas de la memoria de mundos consumidos.',
 }
 
 def icono_arma(nombre_db: str) -> str:
@@ -205,6 +209,14 @@ PERSONAJE_NOMBRES_DISPLAY = {
     'Guardian_Mago_A':     'Velen, el Profeta Rúnico',
     'Guardian_Asesino_S':  'Varek, el Trunca Suertes',
     'Guardian_Mago_S':     'Nara, la Última Arma',
+    'Anomalia_Asesino2_A':  'Azote Sombrío',
+    'Anomalia_Guerrero2_A': 'Sombra Inquebrantable',
+    'Anomalia_Asesino2_B':  'Segador Ciego',
+    'Anomalia_Mago2_A':     'Ecos del Olvido',
+    'Guardian_Asesino2_A':  'Nyx, el Destello Escarlata',
+    'Guardian_Guerrero2_B': 'Rox, el Nexo Eléctrico',
+    'Guardian_Mago2_A':     'Gideon, el Catalizador',
+    'Guardian_Guerrero2_A': 'Orion, el Bastión Inquebrantable',
 }
 
 PERSONAJE_LORE = {
@@ -327,25 +339,13 @@ PERSONAJES_CON_DADO        = {'guardian_asesino_s'}
 PERSONAJES_CON_BERSERKER_B = {'anomalia_guerrero_s'}
 
 
-# FIX: anomalia_asesino_b tiene la B mayúscula en TODOS sus estados como jugador
-_JUGADOR_B_MAYUS = {'anomalia_asesino_b'}
-
 def obtenerRutaJugador(nombre: str, estado: str) -> str:
     n = nombre.lower()
-    if n in _JUGADOR_B_MAYUS:
-        estado_archivo = estado[0].upper() + estado[1:]
-        return f'{RUTA_CHARACTERS}/{n}/{n}_{estado_archivo}.png'
     return f'{RUTA_CHARACTERS}/{n}/{n}_{estado}.png'
 
 
-# FIX: anomalia_asesino_b como enemigo solo tiene B mayúscula en inventario y splash
-_ENEMIGO_B_MAYUS = {'inventario', 'splash'}
-
 def obtenerRutaEnemigo(nombre_sprite: str, estado: str) -> str:
     n = nombre_sprite.lower()
-    if n == 'anomalia_asesino_b' and estado in _ENEMIGO_B_MAYUS:
-        estado_archivo = estado[0].upper() + estado[1:]
-        return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado_archivo}.png'
     return f'{RUTA_ENEMIGOS}/{n}/{n}_{estado}.png'
 
 
@@ -383,26 +383,26 @@ ENEMIGO_POR_NODO = {
     'guardian': {
         1:  'anomalia_guerrero_b',
         2:  'anomalia_asesino_b',
-        3:  'anomalia_asesino_a',
-        4:  'anomalia_mago_a',
+        3:  'anomalia_asesino2_a',
+        4:  'anomalia_guerrero2_a',
         5:  'anomalia_mago_s',
-        6:  'anomalia_guerrero_b',
-        7:  'anomalia_asesino_b',
-        8:  'anomalia_asesino_a',
-        9:  'anomalia_mago_a',
+        6:  'anomalia_mago_a',
+        7:  'anomalia_asesino_a',
+        8:  'anomalia_asesino2_b',
+        9:  'anomalia_mago2_a',
         10: 'anomalia_guerrero_s',
     },
     # Jugador Anomalías → enemigos son Guardianes
     'anomalia': {
         1:  'guardian_guerrero_b',
         2:  'guardian_mago_b',
-        3:  'guardian_mago_a',
-        4:  'guardian_guerrero_a',
+        3:  'guardian_asesino2_a',
+        4:  'guardian_guerrero2_b',
         5:  'guardian_mago_s',
-        6:  'guardian_guerrero_b',
-        7:  'guardian_mago_b',
-        8:  'guardian_mago_a',
-        9:  'guardian_guerrero_a',
+        6:  'guardian_guerrero_a',
+        7:  'guardian_mago_a',
+        8:  'guardian_mago2_a',
+        9:  'guardian_guerrero2_a',
         10: 'guardian_asesino_s',
     },
 }
@@ -421,4 +421,8 @@ GUERRERO_TRAMOS_ATK = [
     (300, 10),  # ATK <= 300 → +10 por tap (necesita ~10 taps, normal)
     (400, 15),  # ATK <= 400 → +15 por tap (necesita ~7 taps, fácil)
     (500, 20),  # ATK <= 500 → +20 por tap (necesita ~5 taps, muy fácil)
+<<<<<<< HEAD
 ]
+=======
+]
+>>>>>>> origin/main

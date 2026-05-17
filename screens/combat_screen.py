@@ -444,9 +444,9 @@ class PantallaCombate(Screen):
         self.imgFondo = Image(source='', allow_stretch=True, keep_ratio=False,
                               size_hint=(1, 1), pos_hint={'x': 0, 'y': 0})
         self.imgJugador = Image(source='', allow_stretch=True, keep_ratio=True,
-                                size_hint=(0.60, 1.2), pos_hint={'x': -0.02, 'y': -0.05})
+                                size_hint=(0.60, 1.2), pos_hint={'x': -0.02, 'y': -0.18})
         self.imgEnemigo = Image(source='', allow_stretch=True, keep_ratio=True,
-                                size_hint=(0.60, 1.2), pos_hint={'x': 0.42, 'y': -0.05})
+                                size_hint=(0.60, 1.2), pos_hint={'x': 0.42, 'y': -0.18})
         self.zonaSprites.add_widget(self.imgFondo)
         self.zonaSprites.add_widget(self.imgJugador)
         self.zonaSprites.add_widget(self.imgEnemigo)
