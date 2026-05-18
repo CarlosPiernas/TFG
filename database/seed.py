@@ -131,7 +131,7 @@ def seed_recursos(cursor: sqlite3.Cursor):
             (id, monedas, tickets_personaje, tickets_arma, pociones, pociones_max,
             ultima_regen, transmutadores, fragmentos_rojos, fragmentos_azules,
             vida_actual, vida_max)
-        VALUES (1, 0, 20, 20, 5, 10, NULL, 0, 0, 0, 0, 0)
+        VALUES (1, 0, 2, 2, 5, 5, NULL, 0, 0, 0, 0, 0)
     """)
     print("Recursos iniciales insertados.")
 
