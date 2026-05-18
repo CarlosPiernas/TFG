@@ -444,9 +444,9 @@ class PantallaCombate(Screen):
         self.imgFondo = Image(source='', allow_stretch=True, keep_ratio=False,
                               size_hint=(1, 1), pos_hint={'x': 0, 'y': 0})
         self.imgJugador = Image(source='', allow_stretch=True, keep_ratio=True,
-                                size_hint=(0.60, 1.2), pos_hint={'x': -0.02, 'y': -0.18})
+                                size_hint=(0.60, 1.2), pos_hint={'x': -0.02, 'y': -0.08})
         self.imgEnemigo = Image(source='', allow_stretch=True, keep_ratio=True,
-                                size_hint=(0.60, 1.2), pos_hint={'x': 0.42, 'y': -0.18})
+                                size_hint=(0.60, 1.2), pos_hint={'x': 0.42, 'y': -0.08})
         self.zonaSprites.add_widget(self.imgFondo)
         self.zonaSprites.add_widget(self.imgJugador)
         self.zonaSprites.add_widget(self.imgEnemigo)
@@ -938,15 +938,15 @@ class PantallaCombate(Screen):
         self._mostrarPanelAsesino()
         destreza = getattr(jugador_obj, 'destreza', 50)
         if destreza <= 20:
-            vel = 1.10        # muy rápida
+            vel = 1.60
         elif destreza <= 75:
-            vel = 0.90        # rápida
+            vel = 1.30
         elif destreza <= 150:
-            vel = 0.65        # media
+            vel = 1.00
         elif destreza <= 225:
-            vel = 0.55        # media-baja
+            vel = 0.80
         else:
-            vel = 0.40        # lenta
+            vel = 0.60
         ancho = 0.10
         self._asesino_activo = True
         self._asesino_pos    = 0.0
@@ -1097,8 +1097,9 @@ class PantallaCombate(Screen):
             if l.lower().startswith('turno '): continue
             if 'golpea a' in l.lower() or 'golpea al' in l.lower(): continue
             if 'recibe el ataque' in l.lower(): continue
-            self._log(l.replace(self.nombreJugador, nombre_j))
-
+            nombre_e_interno = self._encuentro.enemigo.nombre if self._encuentro else ''
+            self._log(l.replace(self.nombreJugador, nombre_j).replace(nombre_e_interno, nombre_e))
+            
         self._logSeparador()
         self._resolverSpritePostTurno(vida_j_antes, vida_e_antes, r)
         self._resolverSpriteEnemigoPostTurno(vida_j_antes, vida_e_antes, r)
